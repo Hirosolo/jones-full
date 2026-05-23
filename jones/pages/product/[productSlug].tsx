@@ -2,9 +2,7 @@ import type { ProductComponentType } from "src/types/shared";
 import { NextPage, GetStaticProps, GetStaticPaths } from "next";
 import SEO from "@Components/common/SEO";
 import { useCurrencyFormatter } from "@Contexts/UIContext";
-import { getProductDetail, getSitemapProducts } from "@Lib/api/products";
-import { MOCK_PRODUCTS } from "@Lib/mockData";
-import { getPathString } from "src/utils";
+import { getLatestProducts, getProductDetail, getSitemapProducts } from "@Lib/api/products";
 import { ProductPlaceholderImg } from "src/constants";
 import ProductsGrid from "@Components/products/ProductsGrid";
 import ShareButton from "@Components/common/ShareButton";
@@ -123,13 +121,6 @@ export const getStaticPaths: GetStaticPaths = async () => {
     console.error("[ProductPage] Failed to fetch sitemap for paths:", err);
   }
 
-  // Fallback to mock products if API fails
-  if (!paths.length) {
-    paths = MOCK_PRODUCTS.map((product) => ({
-      params: { productSlug: getPathString(`${product.title} ${product.sku}`) },
-    }));
-  }
-
   return { paths, fallback: "blocking" };
 };
 
@@ -137,6 +128,7 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
   const productSlug = params?.productSlug as string;
 
   let product: ProductComponentType | null = null;
+  let relatedProducts: ProductComponentType[] = [];
 
   try {
     product = await getProductDetail(productSlug);
@@ -144,15 +136,15 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
     console.error("[ProductPage] Failed to fetch product detail:", err);
   }
 
-  // Fallback to mock data
-  if (!product) {
-    product = MOCK_PRODUCTS.find(
-      (p) => getPathString(`${p.title} ${p.sku}`) === productSlug
-    ) || null;
-  }
-
   if (!product) {
     return { notFound: true };
+  }
+
+  try {
+    const latest = await getLatestProducts();
+    relatedProducts = latest.filter((p) => p.id !== product.id);
+  } catch (err) {
+    console.error("[ProductPage] Failed to fetch related products:", err);
   }
 
   const blurDataUrls = product.mediaURLs.reduce<Record<string, string>>(
@@ -171,7 +163,7 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
   return {
     props: {
       product,
-      relatedProducts: MOCK_PRODUCTS.filter((p) => p.id !== product!.id),
+      relatedProducts,
       imageDimensions,
       blurDataUrls,
     },

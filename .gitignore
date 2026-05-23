@@ -42,6 +42,18 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 frontend/.next/
+jones/.next/
+jones/out/
+jones/build/
+jones/.pnp
+jones/.pnp.js
+jones/.env*.local
+jones/.env
+jones/.vercel/
+jones/coverage/
+jones/*.tsbuildinfo
+jones/next-env.d.ts
+jones/.pnpm-debug.log*
 
 # IDE
 .vscode/

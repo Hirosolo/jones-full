@@ -16,10 +16,11 @@ import ErrorBoundary from "@Components/ErrorBoundary";
 
 import { AuthProvider } from "@Contexts/AuthContext";
 import { UIProvider } from "@Contexts/UIContext";
-import { MOCK_RATES } from "@Lib/mockData";
 import { getCurrentUser } from "@Lib/api/auth";
 import { transformUserToUserType } from "@Lib/transformers";
 import type { UserType } from "src/types/shared";
+
+const DEFAULT_CURRENCY_RATES = [{ symbol: "USD", rate: 1 }];
 
 NProgress.configure({ showSpinner: false });
 Router.events.on("routeChangeStart", () => NProgress.start());
@@ -32,7 +33,7 @@ function MyApp({ Component, pageProps }: AppProps) {
 
   return (
     <>
-      <UIProvider currencyRates={MOCK_RATES} announcementHidden={false}>
+      <UIProvider currencyRates={DEFAULT_CURRENCY_RATES} announcementHidden={false}>
         <AuthProvider currentUser={(pageProps as any).__user || { id: "guest", isAuth: false, wishlist: [], cart: [] }}>
           {isAdmin ? (
             <AdminLayout>

@@ -18,7 +18,6 @@ import ProductsProvider, {
 } from "@Contexts/ProductsContext";
 import { getProductsByCategory } from "@Lib/api/products";
 import { getCategories } from "@Lib/api/catalog";
-import { MOCK_PRODUCTS } from "@Lib/mockData";
 import { categories } from "@Components/header/MenuLists";
 import { ProductPlaceholderImg } from "src/constants";
 import { getPathString } from "src/utils";
@@ -173,10 +172,6 @@ export const getStaticProps: GetStaticProps = async function ({ params }) {
     products = data.products;
   } catch (err) {
     console.error("[CategoryPage] Failed to fetch category products:", err);
-  }
-
-  if (!products.length) {
-    products = MOCK_PRODUCTS;
   }
 
   const productImagePlaceholders = products.reduce<Record<string, string>>(

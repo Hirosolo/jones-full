@@ -16,7 +16,7 @@ import ProductsProvider, {
   filterStateType,
   useProductsState,
 } from "@Contexts/ProductsContext";
-import { MOCK_PRODUCTS } from "@Lib/mockData";
+import { getProductsByBrand } from "@Lib/api/products";
 import { brandsData } from "@Components/header/MenuLists";
 import { ProductPlaceholderImg } from "src/constants";
 import { getPathString } from "src/utils";
@@ -153,9 +153,15 @@ export const getStaticPaths: GetStaticPaths = async () => {
 
 export const getStaticProps: GetStaticProps = async function ({ params }) {
   const [category = "all"] = params?.categoryId as string[];
+  let allProducts: ProductComponentType[] = [];
 
-  // Frontend only: Use mock products
-  const allProducts = MOCK_PRODUCTS;
+  try {
+    const data = await getProductsByBrand(category);
+    allProducts = data.products;
+  } catch (err) {
+    console.error("[BrandPage] Failed to fetch brand products:", err);
+  }
+
   const productImagePlaceholders = allProducts.reduce<Record<string, string>>(
     (acc, product) => {
       acc[product.id] = ProductPlaceholderImg;

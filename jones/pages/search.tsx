@@ -4,7 +4,6 @@ import SEO from "@Components/common/SEO";
 import Constraints from "@Components/products/constraints";
 import ProductsGrid from "@Components/products/ProductsGrid";
 import { getSearchResults } from "@Lib/api/products";
-import { MOCK_PRODUCTS } from "@Lib/mockData";
 
 const SearchPage: NextPage<SearchPageType> = ({ query, products, count }) => {
   return (
@@ -40,14 +39,6 @@ export const getServerSideProps: GetServerSideProps = async ({ query }) => {
     } catch (err) {
       console.error("[SearchPage] Failed to fetch search results:", err);
     }
-  }
-
-  // Fallback to client-side filtering if API fails
-  if (!products.length && searchQuery) {
-    products = MOCK_PRODUCTS.filter((product) =>
-      product.title.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    count = products.length;
   }
 
   return {

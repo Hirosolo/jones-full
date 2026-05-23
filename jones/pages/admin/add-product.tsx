@@ -18,8 +18,6 @@ export default function AddProduct() {
     ) as HTMLInputElement;
 
     if (files) {
-      // In frontend only mode, this might still work if Cloudinary keys are set, 
-      // but the API submission will fail.
       const uploads = await cloudinaryUpload(files);
       params["mediaURLs"] = uploads.map((r) => r.secure_url).join("\n");
 
@@ -34,7 +32,7 @@ export default function AddProduct() {
         beforeSubmit={handleSubmit}
         afterSubmit={(res) => {
           if (res.success) {
-            toast("Successfully Added Product (Mock)", {
+            toast("Successfully Added Product", {
               type: "success",
             });
           }

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import type { User, Review as ReviewType } from "src/types/shared";
+import { Role } from "src/types/shared";
+import { toast } from "react-toastify";
 
 import Button from "../formControls/Button";
 import TextField from "../formControls/TextField";
@@ -10,6 +12,7 @@ import Modal from "../Modal";
 import Review from "./Review";
 
 import { useAuthState } from "@Contexts/AuthContext";
+import { createReview, getReviews } from "@Lib/api/reviews";
 
 export default function Reviews({ productId }: PropTypes) {
   const [reviewModal, setReviewModal] = useState(false);
@@ -19,9 +22,38 @@ export default function Reviews({ productId }: PropTypes) {
   const { user } = useAuthState();
 
   useEffect(() => {
-    // Frontend only: Return empty or mock reviews
-    setReviews([]);
-    setLoading(false);
+    let mounted = true;
+
+    async function loadReviews() {
+      setLoading(true);
+      try {
+        const data = await getReviews(productId);
+        if (!mounted) return;
+        setReviews(
+          data.map((review) => ({
+            ...review,
+            user: {
+              id: review.userId || "anonymous",
+              username: review.userId || "Anonymous",
+              email: "",
+              role: Role.USER,
+            },
+          }))
+        );
+      } catch (err) {
+        if (!mounted) return;
+        console.error("[Reviews] Failed to fetch reviews:", err);
+        setReviews([]);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+
+    loadReviews();
+
+    return () => {
+      mounted = false;
+    };
   }, [productId]);
 
   const averageRatings =
@@ -49,13 +81,53 @@ export default function Reviews({ productId }: PropTypes) {
             <div className="product-details__reviews-form">
               <Form
                 method="POST"
-                action={`#`}
-                afterSubmit={(data) => {
-                  alert("Review submitted (Mock)");
-                  setReviewModal(false);
+                action="#"
+                beforeSubmit={async (params) => {
+                  const rating = Number(params.rating || 0);
+                  if (!rating) {
+                    toast("Please select a rating first", { type: "error" });
+                    return [params, false];
+                  }
+
+                  try {
+                    const response = await createReview({
+                      product_code: productId,
+                      rating,
+                      subject: String(params.subject || ""),
+                      content: String(params.body || ""),
+                    });
+
+                    if (!response?.ok) {
+                      toast(response?.msg || "Failed to submit review", {
+                        type: "error",
+                      });
+                      return [params, false];
+                    }
+
+                    const data = await getReviews(productId);
+                    setReviews(
+                      data.map((review) => ({
+                        ...review,
+                        user: {
+                          id: review.userId || "anonymous",
+                          username: review.userId || "Anonymous",
+                          email: "",
+                          role: Role.USER,
+                        },
+                      }))
+                    );
+                    toast("Review submitted", { type: "success" });
+                    setReviewModal(false);
+                  } catch (err) {
+                    console.error("[Reviews] Failed to submit review:", err);
+                    toast("Failed to submit review", { type: "error" });
+                  }
+
+                  return [params, false];
                 }}
               >
                 <RatingStars interactive />
+                <TextField name="subject" label="Title" />
                 <TextField name="body" multiline label="Your review" />
                 <Button>Submit Review</Button>
               </Form>
@@ -77,9 +149,9 @@ export default function Reviews({ productId }: PropTypes) {
           {averageRatings.toFixed(1)} ({reviews.length} Customer Reviews)
         </div>
         <ul className="reviews__list">
-          {reviews.map((review) => (
+          {reviews.map((review, index) => (
             <li
-              key={review.userId + review.productId}
+              key={`${review.userId}-${review.addedAt}-${index}`}
               className="reviews__item"
             >
               <Review {...review} />

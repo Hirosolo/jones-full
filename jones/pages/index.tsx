@@ -3,7 +3,6 @@ import dynamic from "next/dynamic";
 import type { ProductComponentType } from "src/types/shared";
 
 import { getLatestProducts, getBestSellers } from "@Lib/api/products";
-import { MOCK_PRODUCTS } from "@Lib/mockData";
 
 const CollectionSection = dynamic(
   () => import("@Components/home/CollectionSection")
@@ -54,10 +53,6 @@ export const getStaticProps: GetStaticProps = async () => {
   } catch (err) {
     console.error("[Home] Failed to fetch best sellers:", err);
   }
-
-  // Fallback to mock data if APIs fail
-  if (!newArrivals.length) newArrivals = MOCK_PRODUCTS;
-  if (!bestSellers.length) bestSellers = MOCK_PRODUCTS;
 
   const newArrivalsImgDataUrls: Record<string, string> = {};
   const bestSellersImgDataUrls: Record<string, string> = {};
