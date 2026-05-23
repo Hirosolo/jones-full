@@ -146,9 +146,9 @@ class Product(models.Model):
     desc_short = models.TextField(blank=True, help_text='Mô tả ngắn gọn về sản phẩm')
 
     STATUS_CHOICES = (
-        ('D', 'Nháp'),
-        ('A', 'Đang Bán'),
-        ('O', 'Hết Hàng'),
+        ('D', 'Draft'),
+        ('A', 'Active'),
+        ('O', 'Out of Stock'),
     )
     status = models.CharField(max_length=1, choices=STATUS_CHOICES, default='D', db_index=True)
 

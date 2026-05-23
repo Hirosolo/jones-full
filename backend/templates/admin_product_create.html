@@ -1,0 +1,1199 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Product - Backend Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #090b10;
+            --panel: rgba(16, 19, 28, 0.92);
+            --panel-soft: rgba(255, 255, 255, 0.04);
+            --border: rgba(255, 255, 255, 0.09);
+            --border-strong: rgba(255, 255, 255, 0.16);
+            --text: #edf1f8;
+            --muted: #98a2b3;
+            --accent: #2dd36f;
+            --accent-2: #46c2ff;
+            --danger: #ff7676;
+            --warning: #f4c542;
+            --shadow: 0 28px 80px rgba(0, 0, 0, 0.38);
+            --radius: 24px;
+        }
+
+        * { box-sizing: border-box; }
+        html, body { min-height: 100%; }
+        body {
+            margin: 0;
+            font-family: Inter, sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at 12% 10%, rgba(70, 194, 255, 0.16), transparent 30%),
+                radial-gradient(circle at 88% 8%, rgba(45, 211, 111, 0.14), transparent 28%),
+                linear-gradient(180deg, #07090e 0%, #0b0d12 100%);
+        }
+
+        a { color: inherit; }
+
+        .shell {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 28px 20px 48px;
+        }
+
+        .card {
+            border: 1px solid var(--border);
+            background: var(--panel);
+            backdrop-filter: blur(18px);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 24px 28px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent);
+        }
+
+        .title-block h1 {
+            margin: 0;
+            font-size: clamp(26px, 2.2vw, 36px);
+            letter-spacing: -0.04em;
+        }
+
+        .title-block p {
+            margin: 8px 0 0;
+            color: var(--muted);
+        }
+
+        .back-link,
+        .action-btn,
+        .secondary-btn,
+        .icon-btn {
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text);
+            font: inherit;
+            text-decoration: none;
+            cursor: pointer;
+            transition: transform 140ms ease, border-color 140ms ease, background 140ms ease, opacity 140ms ease;
+        }
+
+        .back-link,
+        .secondary-btn,
+        .icon-btn {
+            padding: 12px 16px;
+        }
+
+        .action-btn {
+            padding: 13px 18px;
+            font-weight: 700;
+            background: linear-gradient(135deg, rgba(45, 211, 111, 0.18), rgba(70, 194, 255, 0.18));
+            border-color: rgba(45, 211, 111, 0.25);
+        }
+
+        .primary-btn {
+            border: 0;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            color: #07110b;
+            font-weight: 800;
+            box-shadow: 0 18px 34px rgba(45, 211, 111, 0.18);
+        }
+
+        .danger-btn {
+            border: 1px solid rgba(255, 118, 118, 0.25);
+            background: rgba(255, 118, 118, 0.08);
+            color: #ffb0b0;
+        }
+
+        .back-link:hover,
+        .action-btn:hover,
+        .secondary-btn:hover,
+        .icon-btn:hover {
+            transform: translateY(-1px);
+            border-color: var(--border-strong);
+        }
+
+        .form {
+            padding: 28px;
+            display: grid;
+            gap: 22px;
+        }
+
+        .notice {
+            border: 1px solid rgba(255, 118, 118, 0.18);
+            color: #ffd4d4;
+            background: rgba(255, 118, 118, 0.08);
+            border-radius: 18px;
+            padding: 14px 16px;
+            line-height: 1.45;
+        }
+
+        .notice.success {
+            border-color: rgba(45, 211, 111, 0.24);
+            color: #c9fbe0;
+            background: rgba(45, 211, 111, 0.12);
+        }
+
+        .section {
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 22px;
+            padding: 20px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .section-header h2 {
+            margin: 0;
+            font-size: 17px;
+            letter-spacing: -0.02em;
+        }
+
+        .section-header .hint {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .grid-2,
+        .grid-3 {
+            display: grid;
+            gap: 16px;
+        }
+
+        .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+        .field {
+            display: grid;
+            gap: 8px;
+        }
+
+        .field label,
+        .label-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .required {
+            color: var(--warning);
+            margin-left: 4px;
+        }
+
+        .subtle,
+        .helper {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.45;
+        }
+
+        .input,
+        .select,
+        .textarea {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text);
+            padding: 13px 14px;
+            font: inherit;
+            outline: none;
+            transition: border-color 140ms ease, box-shadow 140ms ease, background 140ms ease;
+        }
+
+        .input:focus,
+        .select:focus,
+        .textarea:focus {
+            border-color: rgba(70, 194, 255, 0.55);
+            box-shadow: 0 0 0 4px rgba(70, 194, 255, 0.12);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .field-error,
+        .global-error {
+            color: #ffb0b0;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .global-error {
+            display: none;
+            border: 1px solid rgba(255, 118, 118, 0.22);
+            background: rgba(255, 118, 118, 0.08);
+            border-radius: 16px;
+            padding: 12px 14px;
+        }
+
+        .global-error.visible { display: block; }
+
+        .slug-row,
+        .meta-row,
+        .footer-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .slug-preview {
+            color: var(--muted);
+            font-size: 12px;
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .inline-action {
+            border: 0;
+            background: transparent;
+            color: var(--accent-2);
+            font-weight: 700;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .input-group {
+            display: grid;
+            gap: 10px;
+        }
+
+        .row-tools {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .pill-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            max-height: 260px;
+            overflow: auto;
+            padding-right: 4px;
+        }
+
+        .tag-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text);
+            padding: 10px 12px;
+            border-radius: 999px;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 140ms ease, border-color 140ms ease, background 140ms ease;
+        }
+
+        .tag-chip input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .tag-chip:hover {
+            transform: translateY(-1px);
+            border-color: rgba(70, 194, 255, 0.32);
+        }
+
+        .tag-chip.selected {
+            border-color: rgba(45, 211, 111, 0.35);
+            background: linear-gradient(135deg, rgba(45, 211, 111, 0.18), rgba(70, 194, 255, 0.12));
+            color: #dbffea;
+        }
+
+        .image-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .image-row {
+            display: grid;
+            grid-template-columns: 52px minmax(0, 1fr) auto;
+            gap: 12px;
+            align-items: center;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 12px;
+            cursor: grab;
+        }
+
+        .image-row.dragging {
+            opacity: 0.65;
+            border-color: rgba(70, 194, 255, 0.35);
+        }
+
+        .image-thumb {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            object-fit: cover;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .image-thumb.empty {
+            display: grid;
+            place-items: center;
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        .image-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .drag-handle {
+            width: 34px;
+            height: 34px;
+            border-radius: 12px;
+            display: grid;
+            place-items: center;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            background: rgba(255, 255, 255, 0.02);
+            flex: none;
+            cursor: grab;
+        }
+
+        .toggle-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 14px;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .toggle input {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--accent);
+        }
+
+        .footer-actions {
+            padding-top: 6px;
+            justify-content: flex-start;
+        }
+
+        .footer-actions .primary-btn,
+        .footer-actions .secondary-btn {
+            min-width: 160px;
+            justify-content: center;
+        }
+
+        dialog {
+            border: 1px solid var(--border);
+            background: rgba(13, 16, 24, 0.98);
+            color: var(--text);
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+            width: min(560px, calc(100vw - 24px));
+        }
+
+        dialog::backdrop {
+            background: rgba(3, 5, 10, 0.72);
+            backdrop-filter: blur(8px);
+        }
+
+        .modal {
+            padding: 20px;
+        }
+
+        .modal header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        .modal h3 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        .modal-form {
+            display: grid;
+            gap: 14px;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .modal-error {
+            display: none;
+            border: 1px solid rgba(255, 118, 118, 0.22);
+            background: rgba(255, 118, 118, 0.08);
+            color: #ffb0b0;
+            border-radius: 14px;
+            padding: 10px 12px;
+            font-size: 12px;
+        }
+
+        .modal-error.visible { display: block; }
+
+        .saving-banner {
+            display: none;
+            border: 1px solid rgba(70, 194, 255, 0.22);
+            background: rgba(70, 194, 255, 0.08);
+            color: #d4f3ff;
+            border-radius: 16px;
+            padding: 12px 14px;
+        }
+
+        .saving-banner.visible { display: block; }
+
+        .sticky-summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        @media (max-width: 1024px) {
+            .grid-3 { grid-template-columns: 1fr; }
+            .grid-2 { grid-template-columns: 1fr; }
+            .card-header { align-items: flex-start; flex-direction: column; }
+        }
+
+        @media (max-width: 720px) {
+            .shell { padding: 12px; }
+            .form { padding: 16px; }
+            .card-header { padding: 18px; }
+            .section { padding: 16px; }
+            .image-row { grid-template-columns: 52px minmax(0, 1fr); }
+            .image-controls { grid-column: 1 / -1; justify-content: space-between; }
+            .footer-actions .primary-btn,
+            .footer-actions .secondary-btn { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="shell">
+        <section class="card">
+            <header class="card-header">
+                <div class="title-block">
+                    <h1>➕ Create Product</h1>
+                    <p>Dark-theme backend product editor with inline category, brand, and tag creation.</p>
+                </div>
+                <a class="back-link" href="/admin/">← Back to List</a>
+            </header>
+
+            <form id="create-product-form" class="form" method="post" action="{% url 'admin_product_create' %}" novalidate>
+                {% csrf_token %}
+
+                <div id="form-banner" class="saving-banner" aria-live="polite"></div>
+                <div id="form-global-error" class="global-error"></div>
+
+                <section class="section">
+                    <div class="section-header">
+                        <div>
+                            <h2>Page Header</h2>
+                            <div class="hint">Left title, right back action, centered form card layout.</div>
+                        </div>
+                        <a class="secondary-btn" href="/admin/">← Back to List</a>
+                    </div>
+                    <div class="grid-2">
+                        <div class="field">
+                            <label for="product-name">Product Name <span class="required">*</span></label>
+                            <input id="product-name" class="input" type="text" name="name" value="{{ form_values.name }}" placeholder="Classic Hoodie">
+                            <div class="field-error" data-error-for="name">{{ field_errors.name|default:'' }}</div>
+                        </div>
+                        <div class="field">
+                            <div class="slug-row">
+                                <label for="product-slug">URL Slug</label>
+                                <div class="slug-preview" id="slug-preview">Preview: /p/product-slug</div>
+                            </div>
+                            <input id="product-slug" class="input" type="text" name="slug" value="{{ form_values.slug }}" placeholder="auto-generated-from-name">
+                            <div class="helper">Auto-generates from product name until you edit it manually.</div>
+                            <div class="field-error" data-error-for="slug">{{ field_errors.slug|default:'' }}</div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="section">
+                    <div class="section-header">
+                        <div>
+                            <h2>Pricing Row</h2>
+                            <div class="hint">Current price and compare-at price in a two-column layout.</div>
+                        </div>
+                    </div>
+                    <div class="grid-2">
+                        <div class="field">
+                            <label for="product-price">Price <span class="required">*</span></label>
+                            <input id="product-price" class="input" type="number" name="price" value="{{ form_values.price }}" min="0" step="0.01" placeholder="49.99">
+                            <div class="field-error" data-error-for="price">{{ field_errors.price|default:'' }}</div>
+                        </div>
+                        <div class="field">
+                            <label for="compare-at-price">Compare-at Price <span class="subtle">(strikethrough)</span></label>
+                            <input id="compare-at-price" class="input" type="number" name="compare_at_price" value="{{ form_values.compare_at_price }}" min="0" step="0.01" placeholder="69.99">
+                            <div class="helper">Used as the original / old price for display.</div>
+                            <div class="field-error" data-error-for="compare_at_price">{{ field_errors.compare_at_price|default:'' }}</div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="section">
+                    <div class="section-header">
+                        <div>
+                            <h2>Product Meta Row</h2>
+                            <div class="hint">Select category, brand, and status. New items can be created inline.</div>
+                        </div>
+                    </div>
+                    <div class="grid-3">
+                        <div class="field">
+                            <div class="label-row">
+                                <label for="category-select">Category <span class="required">*</span></label>
+                                <button class="inline-action" type="button" data-open-modal="category-modal">+ New</button>
+                            </div>
+                            <select id="category-select" class="select" name="category_id">
+                                <option value="">Select...</option>
+                                {% for category in categories %}
+                                    <option value="{{ category.id }}" {% if form_values.category_id|stringformat:'s' == category.id|stringformat:'s' %}selected{% endif %}>{{ category.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="field-error" data-error-for="category_id">{{ field_errors.category_id|default:'' }}</div>
+                        </div>
+
+                        <div class="field">
+                            <div class="label-row">
+                                <label for="brand-select">Brand <span class="required">*</span></label>
+                                <button class="inline-action" type="button" data-open-modal="brand-modal">+ New</button>
+                            </div>
+                            <select id="brand-select" class="select" name="brand_id">
+                                <option value="">Select...</option>
+                                {% for brand in brands %}
+                                    <option value="{{ brand.id }}" {% if form_values.brand_id|stringformat:'s' == brand.id|stringformat:'s' %}selected{% endif %}>{{ brand.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="field-error" data-error-for="brand_id">{{ field_errors.brand_id|default:'' }}</div>
+                        </div>
+
+                        <div class="field">
+                            <label for="status-select">Status</label>
+                            <select id="status-select" class="select" name="status">
+                                {% for status in status_options %}
+                                    <option value="{{ status.value }}" {% if form_values.status == status.value %}selected{% endif %}>{{ status.label }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="helper">Draft saves in the database but stays hidden from the frontend. Active is published. Out of Stock stays hidden from the frontend.</div>
+                            <div class="field-error" data-error-for="status">{{ field_errors.status|default:'' }}</div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="section">
+                    <div class="section-header">
+                        <div>
+                            <h2>Descriptions</h2>
+                            <div class="hint">Short summary and the full HTML description body.</div>
+                        </div>
+                    </div>
+                    <div class="grid-2">
+                        <div class="field">
+                            <label for="short-description">Short Description</label>
+                            <textarea id="short-description" class="textarea" name="desc_short" rows="5" placeholder="Short preview content...">{{ form_values.desc_short }}</textarea>
+                            <div class="field-error" data-error-for="desc_short">{{ field_errors.desc_short|default:'' }}</div>
+                        </div>
+                        <div class="field">
+                            <label for="full-description">Full Description (HTML)</label>
+                            <textarea id="full-description" class="textarea" name="desc" rows="10" placeholder="Main product description body...">{{ form_values.desc }}</textarea>
+                            <div class="field-error" data-error-for="desc">{{ field_errors.desc|default:'' }}</div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="section">
+                    <div class="section-header">
+                        <div>
+                            <h2>Product Images Section</h2>
+                            <div class="hint">First image is primary; drag order is respected.</div>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <div class="helper">Product Image URLs</div>
+                        <div id="image-list" class="image-list" aria-label="Product image list">
+                            {% if form_values.image_urls %}
+                                {% for image_url in form_values.image_urls %}
+                                    <div class="image-row" draggable="true">
+                                        <div class="image-thumb-wrap">
+                                            {% if image_url %}
+                                                <img class="image-thumb" src="{{ image_url }}" alt="Image preview">
+                                            {% else %}
+                                                <div class="image-thumb empty">No image</div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="field" style="margin: 0;">
+                                            <input class="input image-url-input" type="url" name="image_urls" value="{{ image_url }}" placeholder="https://example.com/primary.jpg">
+                                        </div>
+                                        <div class="image-controls">
+                                            <div class="drag-handle" aria-label="Drag to reorder">⋮⋮</div>
+                                            <button class="icon-btn danger-btn remove-image-btn" type="button">Delete</button>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        <button id="add-image-btn" class="secondary-btn" type="button">+ Add image URL</button>
+                        <div class="field-error" data-error-for="image_urls">{{ field_errors.image_urls|default:'' }}</div>
+                    </div>
+                </section>
+
+                <section class="section">
+                    <div class="section-header">
+                        <div>
+                            <h2>Product Flags</h2>
+                            <div class="hint">Independent booleans for featured and best seller states.</div>
+                        </div>
+                    </div>
+                    <div class="toggle-row">
+                        <label class="toggle">
+                            <input type="checkbox" name="is_featured" {% if form_values.is_featured %}checked{% endif %}>
+                            <span>⭐ Featured Product</span>
+                        </label>
+                        <label class="toggle">
+                            <input type="checkbox" name="best_seller" {% if form_values.best_seller %}checked{% endif %}>
+                            <span>🏆 Best Seller</span>
+                        </label>
+                    </div>
+                </section>
+
+                <section class="section">
+                    <div class="section-header">
+                        <div>
+                            <h2>Tags (click to toggle — {{ form_values.selected_tag_ids|length }} selected)</h2>
+                            <div class="hint">Scrollable wrapping chips. Selected tags are enabled for the product.</div>
+                        </div>
+                        <button class="inline-action" type="button" data-open-modal="tag-modal">+ New Tag</button>
+                    </div>
+                    <div id="tag-chip-list" class="pill-grid">
+                        {% for tag in tags %}
+                            <label class="tag-chip{% if tag.id in form_values.selected_tag_ids %} selected{% endif %}">
+                                <input type="checkbox" name="tag_ids" value="{{ tag.id }}" {% if tag.id in form_values.selected_tag_ids %}checked{% endif %}>
+                                <span>{{ tag.name }}</span>
+                            </label>
+                        {% empty %}
+                            <div class="helper">No tags exist yet. Create one with + New Tag.</div>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <section class="section">
+                    <div class="section-header">
+                        <div>
+                            <h2>SEO Section</h2>
+                            <div class="hint">Two-column layout for metadata fields.</div>
+                        </div>
+                    </div>
+                    <div class="grid-2">
+                        <div class="field">
+                            <label for="meta-title">Meta Title (SEO)</label>
+                            <input id="meta-title" class="input" type="text" name="meta_title" value="{{ form_values.meta_title }}" placeholder="SEO title for the page">
+                            <div class="field-error" data-error-for="meta_title">{{ field_errors.meta_title|default:'' }}</div>
+                        </div>
+                        <div class="field">
+                            <label for="meta-description">Meta Description (SEO)</label>
+                            <textarea id="meta-description" class="textarea" name="meta_desc" rows="4" placeholder="SEO description for search engines">{{ form_values.meta_desc }}</textarea>
+                            <div class="field-error" data-error-for="meta_desc">{{ field_errors.meta_desc|default:'' }}</div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="section">
+                    <div class="section-header">
+                        <div>
+                            <h2>Footer Actions</h2>
+                            <div class="hint">Validates the form, creates the product, and returns to the list.</div>
+                        </div>
+                    </div>
+                    <div class="footer-actions">
+                        <button id="submit-btn" class="action-btn primary-btn" type="submit">➕ Create Product</button>
+                        <a class="secondary-btn" href="/admin/">Cancel</a>
+                    </div>
+                    <div class="sticky-summary" aria-live="polite">
+                        <span>Slug preview: <strong id="footer-slug-preview">/p/product-slug</strong></span>
+                        <span>Images: <strong id="image-count">{{ form_values.image_urls|length }}</strong></span>
+                        <span>Tags: <strong id="tag-count">{{ form_values.selected_tag_ids|length }}</strong></span>
+                    </div>
+                </section>
+            </form>
+        </section>
+    </div>
+
+    <dialog id="category-modal">
+        <div class="modal">
+            <header>
+                <div>
+                    <h3>Create Category</h3>
+                    <div class="subtle">Creates a category inline and selects it for the product.</div>
+                </div>
+                <button class="icon-btn" type="button" data-close-modal="category-modal">Close</button>
+            </header>
+            <form class="modal-form" data-inline-form="category" action="{% url 'admin_category_inline_create' %}">
+                <div class="modal-error" data-modal-error="category"></div>
+                <div class="field">
+                    <label for="category-name">Name <span class="required">*</span></label>
+                    <input id="category-name" class="input" type="text" name="name" placeholder="Outerwear">
+                </div>
+                <div class="field">
+                    <label for="category-desc">Description</label>
+                    <textarea id="category-desc" class="textarea" name="desc" rows="4" placeholder="Optional description"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button class="secondary-btn" type="button" data-close-modal="category-modal">Cancel</button>
+                    <button class="action-btn primary-btn" type="submit">Create Category</button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+
+    <dialog id="brand-modal">
+        <div class="modal">
+            <header>
+                <div>
+                    <h3>Create Brand</h3>
+                    <div class="subtle">Creates a brand inline and selects it for the product.</div>
+                </div>
+                <button class="icon-btn" type="button" data-close-modal="brand-modal">Close</button>
+            </header>
+            <form class="modal-form" data-inline-form="brand" action="{% url 'admin_brand_inline_create' %}">
+                <div class="modal-error" data-modal-error="brand"></div>
+                <div class="field">
+                    <label for="brand-name">Name <span class="required">*</span></label>
+                    <input id="brand-name" class="input" type="text" name="name" placeholder="Fulfill Next">
+                </div>
+                <div class="field">
+                    <label for="brand-league">League</label>
+                    <input id="brand-league" class="input" type="text" name="league" placeholder="Premium / Core / Seasonal">
+                </div>
+                <div class="modal-actions">
+                    <button class="secondary-btn" type="button" data-close-modal="brand-modal">Cancel</button>
+                    <button class="action-btn primary-btn" type="submit">Create Brand</button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+
+    <dialog id="tag-modal">
+        <div class="modal">
+            <header>
+                <div>
+                    <h3>Create Tag</h3>
+                    <div class="subtle">Creates a tag inline and automatically selects it.</div>
+                </div>
+                <button class="icon-btn" type="button" data-close-modal="tag-modal">Close</button>
+            </header>
+            <form class="modal-form" data-inline-form="tag" action="{% url 'admin_tag_inline_create' %}">
+                <div class="modal-error" data-modal-error="tag"></div>
+                <div class="field">
+                    <label for="tag-name">Name <span class="required">*</span></label>
+                    <input id="tag-name" class="input" type="text" name="name" placeholder="waterproof">
+                </div>
+                <div class="field">
+                    <label for="tag-desc">Description</label>
+                    <textarea id="tag-desc" class="textarea" name="desc" rows="4" placeholder="Optional description"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button class="secondary-btn" type="button" data-close-modal="tag-modal">Cancel</button>
+                    <button class="action-btn primary-btn" type="submit">Create Tag</button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+
+    <script>
+        const form = document.getElementById('create-product-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const nameInput = document.getElementById('product-name');
+        const slugInput = document.getElementById('product-slug');
+        const slugPreview = document.getElementById('slug-preview');
+        const footerSlugPreview = document.getElementById('footer-slug-preview');
+        const imageList = document.getElementById('image-list');
+        const imageCount = document.getElementById('image-count');
+        const tagCount = document.getElementById('tag-count');
+        const globalError = document.getElementById('form-global-error');
+        const savingBanner = document.getElementById('form-banner');
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const tagList = document.getElementById('tag-chip-list');
+        let slugManuallyEdited = Boolean(slugInput.value.trim());
+
+        function slugify(value) {
+            return value
+                .toLowerCase()
+                .trim()
+                .replace(/[^a-z0-9\s-]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-|-$/g, '');
+        }
+
+        function currentSlug() {
+            const manual = slugInput.value.trim();
+            if (manual) {
+                return manual;
+            }
+            return slugify(nameInput.value);
+        }
+
+        function refreshSlugPreview() {
+            const slug = currentSlug();
+            const preview = slug ? `/p/${slug}` : '/p/product-slug';
+            slugPreview.textContent = `Preview: ${preview}`;
+            footerSlugPreview.textContent = preview;
+        }
+
+        nameInput.addEventListener('input', () => {
+            if (!slugManuallyEdited) {
+                slugInput.value = slugify(nameInput.value);
+            }
+            refreshSlugPreview();
+        });
+
+        slugInput.addEventListener('input', () => {
+            slugManuallyEdited = true;
+            slugInput.value = slugify(slugInput.value);
+            refreshSlugPreview();
+        });
+
+        function syncTagState() {
+            const selected = tagList.querySelectorAll('input[name="tag_ids"]:checked').length;
+            tagCount.textContent = selected.toString();
+            tagList.querySelectorAll('.tag-chip').forEach((chip) => {
+                const checkbox = chip.querySelector('input[type="checkbox"]');
+                chip.classList.toggle('selected', checkbox.checked);
+            });
+        }
+
+        function wireTagChip(chip) {
+            const checkbox = chip.querySelector('input[type="checkbox"]');
+            checkbox.addEventListener('change', syncTagState);
+        }
+
+        tagList.querySelectorAll('.tag-chip').forEach(wireTagChip);
+        syncTagState();
+
+        function makeThumb(url) {
+            const img = document.createElement('img');
+            img.className = 'image-thumb';
+            img.alt = 'Image preview';
+            img.src = url;
+            img.addEventListener('error', () => {
+                img.replaceWith(createEmptyThumb());
+            });
+            return img;
+        }
+
+        function createEmptyThumb() {
+            const empty = document.createElement('div');
+            empty.className = 'image-thumb empty';
+            empty.textContent = 'No image';
+            return empty;
+        }
+
+        function refreshRowThumb(row) {
+            const input = row.querySelector('.image-url-input');
+            const wrap = row.querySelector('.image-thumb-wrap');
+            const url = input.value.trim();
+            wrap.innerHTML = '';
+            if (url) {
+                wrap.appendChild(makeThumb(url));
+            } else {
+                wrap.appendChild(createEmptyThumb());
+            }
+            updateImageCount();
+        }
+
+        function updateImageCount() {
+            imageCount.textContent = imageList.querySelectorAll('.image-row').length.toString();
+        }
+
+        function wireImageRow(row) {
+            const input = row.querySelector('.image-url-input');
+            const removeButton = row.querySelector('.remove-image-btn');
+            const dragHandle = row.querySelector('.drag-handle');
+
+            input.addEventListener('input', () => refreshRowThumb(row));
+            removeButton.addEventListener('click', () => {
+                row.remove();
+                updateImageCount();
+            });
+
+            row.addEventListener('dragstart', (event) => {
+                row.classList.add('dragging');
+                event.dataTransfer.effectAllowed = 'move';
+                event.dataTransfer.setData('text/plain', 'image-row');
+            });
+
+            row.addEventListener('dragend', () => {
+                row.classList.remove('dragging');
+            });
+
+            dragHandle.addEventListener('mousedown', () => {
+                row.setAttribute('draggable', 'true');
+            });
+
+            refreshRowThumb(row);
+        }
+
+        function addImageRow(url = '') {
+            const row = document.createElement('div');
+            row.className = 'image-row';
+            row.setAttribute('draggable', 'true');
+            const thumbWrap = document.createElement('div');
+            thumbWrap.className = 'image-thumb-wrap';
+
+            const field = document.createElement('div');
+            field.className = 'field';
+            field.style.margin = '0';
+
+            const input = document.createElement('input');
+            input.className = 'input image-url-input';
+            input.type = 'url';
+            input.name = 'image_urls';
+            input.value = url;
+            input.placeholder = 'https://example.com/primary.jpg';
+            field.appendChild(input);
+
+            const controls = document.createElement('div');
+            controls.className = 'image-controls';
+
+            const handle = document.createElement('div');
+            handle.className = 'drag-handle';
+            handle.setAttribute('aria-label', 'Drag to reorder');
+            handle.textContent = '⋮⋮';
+
+            const removeButton = document.createElement('button');
+            removeButton.className = 'icon-btn danger-btn remove-image-btn';
+            removeButton.type = 'button';
+            removeButton.textContent = 'Delete';
+
+            controls.appendChild(handle);
+            controls.appendChild(removeButton);
+
+            row.appendChild(thumbWrap);
+            row.appendChild(field);
+            row.appendChild(controls);
+            imageList.appendChild(row);
+            wireImageRow(row);
+            updateImageCount();
+            return row;
+        }
+
+        imageList.querySelectorAll('.image-row').forEach(wireImageRow);
+        updateImageCount();
+
+        document.getElementById('add-image-btn').addEventListener('click', () => addImageRow(''));
+
+        imageList.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            const dragging = imageList.querySelector('.image-row.dragging');
+            const target = event.target.closest('.image-row');
+            if (!dragging || !target || dragging === target) {
+                return;
+            }
+            const targetRect = target.getBoundingClientRect();
+            const shouldInsertAfter = event.clientY > targetRect.top + targetRect.height / 2;
+            imageList.insertBefore(dragging, shouldInsertAfter ? target.nextSibling : target);
+        });
+
+        refreshSlugPreview();
+
+        function showGlobalError(message) {
+            globalError.textContent = message;
+            globalError.classList.add('visible');
+        }
+
+        function clearGlobalError() {
+            globalError.textContent = '';
+            globalError.classList.remove('visible');
+        }
+
+        function clearFieldErrors() {
+            document.querySelectorAll('[data-error-for]').forEach((node) => {
+                node.textContent = '';
+            });
+        }
+
+        function renderFieldErrors(errors) {
+            clearFieldErrors();
+            clearGlobalError();
+            Object.entries(errors || {}).forEach(([key, message]) => {
+                const node = document.querySelector(`[data-error-for="${key}"]`);
+                if (node) {
+                    node.textContent = message;
+                } else {
+                    showGlobalError(message);
+                }
+            });
+        }
+
+        function openDialog(dialogId) {
+            const dialog = document.getElementById(dialogId);
+            dialog.showModal();
+        }
+
+        function closeDialog(dialogId) {
+            const dialog = document.getElementById(dialogId);
+            dialog.close();
+        }
+
+        document.querySelectorAll('[data-open-modal]').forEach((button) => {
+            button.addEventListener('click', () => openDialog(button.dataset.openModal));
+        });
+
+        document.querySelectorAll('[data-close-modal]').forEach((button) => {
+            button.addEventListener('click', () => closeDialog(button.dataset.closeModal));
+        });
+
+        async function postForm(endpoint, formData) {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: formData,
+            });
+            const payload = await response.json();
+            if (!response.ok || payload.ok === false) {
+                throw payload;
+            }
+            return payload;
+        }
+
+        function appendSelectOption(selectId, item) {
+            const select = document.getElementById(selectId);
+            const option = document.createElement('option');
+            option.value = item.id;
+            option.textContent = item.name;
+            select.appendChild(option);
+            select.value = item.id;
+        }
+
+        function appendTagChip(item) {
+            const chip = document.createElement('label');
+            chip.className = 'tag-chip selected';
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.name = 'tag_ids';
+            checkbox.value = item.id;
+            checkbox.checked = true;
+
+            const text = document.createElement('span');
+            text.textContent = item.name;
+
+            chip.appendChild(checkbox);
+            chip.appendChild(text);
+            tagList.appendChild(chip);
+            wireTagChip(chip);
+            syncTagState();
+        }
+
+        document.querySelectorAll('[data-inline-form]').forEach((inlineForm) => {
+            inlineForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const dialogType = inlineForm.dataset.inlineForm;
+                const errorBox = document.querySelector(`[data-modal-error="${dialogType}"]`);
+                errorBox.textContent = '';
+                errorBox.classList.remove('visible');
+
+                const submitButton = inlineForm.querySelector('button[type="submit"]');
+                const previousLabel = submitButton.textContent;
+                submitButton.disabled = true;
+                submitButton.textContent = 'Saving...';
+
+                try {
+                    const payload = await postForm(inlineForm.action, new FormData(inlineForm));
+                    if (dialogType === 'category') {
+                        appendSelectOption('category-select', payload.item);
+                    } else if (dialogType === 'brand') {
+                        appendSelectOption('brand-select', payload.item);
+                    } else if (dialogType === 'tag') {
+                        appendTagChip(payload.item);
+                    }
+                    closeDialog(`${dialogType}-modal`);
+                    inlineForm.reset();
+                } catch (errorPayload) {
+                    const message = errorPayload?.errors?.name || errorPayload?.message || 'Unable to save item.';
+                    errorBox.textContent = message;
+                    errorBox.classList.add('visible');
+                } finally {
+                    submitButton.disabled = false;
+                    submitButton.textContent = previousLabel;
+                }
+            });
+        });
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            clearFieldErrors();
+            clearGlobalError();
+            savingBanner.textContent = 'Validating and saving product...';
+            savingBanner.classList.add('visible');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving...';
+
+            try {
+                const payload = await postForm(form.action, new FormData(form));
+                savingBanner.textContent = payload.message || 'Product created successfully.';
+                const targetUrl = payload.redirectUrl || '/admin/?created=1';
+                if (window.top && window.top !== window.self) {
+                    window.top.location.href = targetUrl;
+                } else {
+                    window.location.href = targetUrl;
+                }
+            } catch (errorPayload) {
+                savingBanner.classList.remove('visible');
+                renderFieldErrors(errorPayload?.errors || {});
+                showGlobalError(errorPayload?.message || 'Please fix the highlighted fields and try again.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '➕ Create Product';
+            }
+        });
+    </script>
+</body>
+</html>

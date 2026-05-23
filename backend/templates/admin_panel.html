@@ -248,6 +248,54 @@
             background: rgba(249, 115, 115, 0.08);
         }
 
+        .notice.success {
+            color: #cffce1;
+            background: rgba(45, 211, 111, 0.12);
+            border-color: rgba(45, 211, 111, 0.24);
+        }
+
+        .tab.create {
+            color: #06110a;
+            background: linear-gradient(135deg, #2dd36f, #46c2ff);
+            border-color: transparent;
+        }
+
+        .create-dialog {
+            width: min(1320px, calc(100vw - 24px));
+            border: 1px solid var(--border);
+            background: rgba(10, 12, 18, 0.98);
+            border-radius: 24px;
+            box-shadow: 0 32px 90px rgba(0, 0, 0, 0.48);
+            padding: 0;
+        }
+
+        .create-dialog::backdrop {
+            background: rgba(3, 5, 10, 0.74);
+            backdrop-filter: blur(10px);
+        }
+
+        .create-dialog header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 18px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .create-dialog header h2 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .create-frame {
+            width: 100%;
+            height: min(86vh, 1100px);
+            border: 0;
+            display: block;
+            background: #0b0d12;
+        }
+
         .empty {
             padding: 48px 18px;
             text-align: center;
@@ -313,10 +361,14 @@
             <div style="display:flex;gap:12px;align-items:center">
                 <div class="subtle">Showing {{ products|length }} product{{ products|length|pluralize }}</div>
                 <div>
-                    <a class="tab create" href="/admin/products/create">➕ Create Product</a>
+                    <button class="tab create" type="button" id="open-create-product">➕ Create Product</button>
                 </div>
             </div>
         </form>
+
+        {% if success_message %}
+            <div class="notice success">{{ success_message }}</div>
+        {% endif %}
 
         {% if error_message %}
             <div class="notice">{{ error_message }}</div>
@@ -381,6 +433,30 @@
                 </tbody>
             </table>
         </section>
+
+        <dialog id="create-product-dialog" class="create-dialog">
+            <header>
+                <div>
+                    <h2>➕ Create Product</h2>
+                    <div class="subtle">Open the product form in a modal, without leaving the backend panel.</div>
+                </div>
+                <button class="tab" type="button" id="close-create-product">Close</button>
+            </header>
+            <iframe class="create-frame" src="/admin/products/create" title="Create Product Form"></iframe>
+        </dialog>
     </div>
+    <script>
+        const createDialog = document.getElementById('create-product-dialog');
+        const openCreateButton = document.getElementById('open-create-product');
+        const closeCreateButton = document.getElementById('close-create-product');
+
+        openCreateButton?.addEventListener('click', () => createDialog.showModal());
+        closeCreateButton?.addEventListener('click', () => createDialog.close());
+        createDialog?.addEventListener('click', (event) => {
+            if (event.target === createDialog) {
+                createDialog.close();
+            }
+        });
+    </script>
 </body>
 </html>
