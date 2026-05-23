@@ -1,0 +1,386 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Products</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #0b0d12;
+            --panel: rgba(18, 20, 29, 0.92);
+            --panel-strong: #151925;
+            --border: rgba(255, 255, 255, 0.08);
+            --text: #e8ebf3;
+            --muted: #98a2b3;
+            --accent: #2dd36f;
+            --accent-2: #46c2ff;
+            --warn: #f4c542;
+            --danger: #f97373;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: Inter, sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(70, 194, 255, 0.12), transparent 30%),
+                radial-gradient(circle at 85% 0%, rgba(45, 211, 111, 0.12), transparent 26%),
+                linear-gradient(180deg, #090b10 0%, #0b0d12 100%);
+            color: var(--text);
+        }
+
+        .shell {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .topbar, .panel, .metric, .toolbar, .table-wrap, .notice {
+            border: 1px solid var(--border);
+            background: var(--panel);
+            backdrop-filter: blur(18px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.24);
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 22px;
+            border-radius: 20px;
+        }
+
+        .brand {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 26px;
+            letter-spacing: -0.03em;
+        }
+
+        .brand p, .subtle { margin: 0; color: var(--muted); }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            text-decoration: none;
+            color: var(--muted);
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border);
+            padding: 10px 14px;
+            border-radius: 999px;
+            font-weight: 600;
+        }
+
+        .tab.active {
+            color: white;
+            background: linear-gradient(135deg, rgba(45, 211, 111, 0.18), rgba(70, 194, 255, 0.18));
+            border-color: rgba(45, 211, 111, 0.35);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+            margin: 18px 0;
+        }
+
+        .metric {
+            padding: 18px;
+            border-radius: 18px;
+        }
+
+        .metric label {
+            display: block;
+            color: var(--muted);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 10px;
+        }
+
+        .metric strong {
+            display: block;
+            font-size: 30px;
+            line-height: 1;
+        }
+
+        .toolbar {
+            padding: 16px;
+            border-radius: 18px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+
+        .search {
+            display: flex;
+            gap: 10px;
+            flex: 1 1 520px;
+        }
+
+        .search input, .search select {
+            width: 100%;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.03);
+            color: var(--text);
+            padding: 13px 14px;
+            font: inherit;
+            outline: none;
+        }
+
+        .search button {
+            border: 0;
+            padding: 13px 18px;
+            border-radius: 14px;
+            font: inherit;
+            font-weight: 700;
+            color: #07110b;
+            background: linear-gradient(135deg, #2dd36f, #46c2ff);
+            cursor: pointer;
+        }
+
+        .table-wrap {
+            margin-top: 16px;
+            border-radius: 18px;
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead th {
+            text-align: left;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            padding: 16px 18px;
+            background: rgba(255,255,255,0.02);
+            border-bottom: 1px solid var(--border);
+        }
+
+        tbody td {
+            padding: 16px 18px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            vertical-align: top;
+        }
+
+        tbody tr:hover {
+            background: rgba(255,255,255,0.025);
+        }
+
+        .product-cell {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+            min-width: 260px;
+        }
+
+        .thumb {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.05);
+            object-fit: cover;
+            flex: none;
+        }
+
+        .product-name {
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .product-meta {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border-radius: 999px;
+            padding: 7px 10px;
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .pill.active { background: rgba(45, 211, 111, 0.15); color: #6ef0a3; }
+        .pill.draft { background: rgba(244, 197, 66, 0.12); color: #f8d46f; }
+        .pill.other { background: rgba(255,255,255,0.06); color: var(--text); }
+
+        .price-now {
+            font-weight: 800;
+            display: block;
+        }
+
+        .price-old {
+            color: var(--muted);
+            text-decoration: line-through;
+            font-size: 12px;
+        }
+
+        .notice {
+            margin-top: 16px;
+            padding: 14px 16px;
+            border-radius: 16px;
+            color: #ffd8d8;
+            background: rgba(249, 115, 115, 0.08);
+        }
+
+        .empty {
+            padding: 48px 18px;
+            text-align: center;
+            color: var(--muted);
+        }
+
+        @media (max-width: 1100px) {
+            .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .topbar, .toolbar { align-items: flex-start; }
+        }
+
+        @media (max-width: 720px) {
+            .shell { padding: 14px; }
+            .grid { grid-template-columns: 1fr; }
+            .search { flex-direction: column; }
+            .table-wrap { overflow-x: auto; }
+            table { min-width: 920px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="shell">
+        <header class="topbar">
+            <div class="brand">
+                <h1>Products Admin</h1>
+                <p>Backend panel powered by the product API.</p>
+            </div>
+            <nav class="tabs" aria-label="Admin sections">
+                <a class="tab" href="/acp/">Django Admin</a>
+                <a class="tab active" href="/admin/">Products</a>
+            </nav>
+        </header>
+
+        <section class="grid">
+            <article class="metric">
+                <label>Total Products</label>
+                <strong>{{ total_count }}</strong>
+            </article>
+            <article class="metric">
+                <label>Active</label>
+                <strong>{{ active_count }}</strong>
+            </article>
+            <article class="metric">
+                <label>Draft</label>
+                <strong>{{ draft_count }}</strong>
+            </article>
+            <article class="metric">
+                <label>Low Stock</label>
+                <strong>{{ low_stock_count }}</strong>
+            </article>
+        </section>
+
+        <form class="toolbar" method="get" action="/admin/">
+            <div class="search">
+                <input type="text" name="search" value="{{ search }}" placeholder="Search by name, code, or slug">
+                <select name="status">
+                    <option value="" {% if not status_filter %}selected{% endif %}>All statuses</option>
+                    <option value="A" {% if status_filter == 'A' %}selected{% endif %}>Active</option>
+                    <option value="D" {% if status_filter == 'D' %}selected{% endif %}>Draft</option>
+                </select>
+                <button type="submit">Search</button>
+            </div>
+            <div style="display:flex;gap:12px;align-items:center">
+                <div class="subtle">Showing {{ products|length }} product{{ products|length|pluralize }}</div>
+                <div>
+                    <a class="tab create" href="/admin/products/create">➕ Create Product</a>
+                </div>
+            </div>
+        </form>
+
+        {% if error_message %}
+            <div class="notice">{{ error_message }}</div>
+        {% endif %}
+
+        <section class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Code</th>
+                        <th>Price</th>
+                        <th>Status</th>
+                        <th>Category</th>
+                        <th>Brand</th>
+                        <th>Stock</th>
+                        <th>Created</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                        <tr>
+                            <td>
+                                <div class="product-cell">
+                                    {% if product.image %}
+                                        <img class="thumb" src="{{ product.image }}" alt="{{ product.name }}">
+                                    {% else %}
+                                        <div class="thumb"></div>
+                                    {% endif %}
+                                    <div>
+                                        <div class="product-name">{{ product.name }}</div>
+                                        <div class="product-meta">{{ product.slug }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ product.code }}</td>
+                            <td>
+                                <span class="price-now">${{ product.price }}</span>
+                                {% if product.fakePrice %}
+                                    <span class="price-old">${{ product.fakePrice }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if product.status == 'A' %}
+                                    <span class="pill active">{{ product.statusDisplay }}</span>
+                                {% elif product.status == 'D' %}
+                                    <span class="pill draft">{{ product.statusDisplay }}</span>
+                                {% else %}
+                                    <span class="pill other">{{ product.statusDisplay }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ product.category.name|default:'-' }}</td>
+                            <td>{{ product.brand.name|default:'-' }}</td>
+                            <td>{{ product.stock|default:'-' }}</td>
+                            <td>{{ product.createdAt|default:'-' }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="8" class="empty">No products found.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+    </div>
+</body>
+</html>
