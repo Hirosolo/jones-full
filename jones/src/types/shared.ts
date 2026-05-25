@@ -61,6 +61,7 @@ export interface Product {
   gender: Gender;
   sku: string;
   details: string;
+  descriptionHtml?: string;
   salesCount: number;
   color: string;
   sizes: number[];

@@ -1,33 +1,28 @@
 import dynamic from "next/dynamic";
-import { useState, Suspense, CSSProperties } from "react";
-import { MoonLoader } from "react-spinners";
+import { useState, Suspense } from "react";
 import { ProductComponentType } from "src/types/shared";
 
 export default function ProductDetails({ product }: PropTypes) {
-  const [tabName, setTabName] = useState<
-    "description" | "size_guide" | "reviews"
-  >("description");
+  const [tabName, setTabName] = useState<"description" | "reviews">(
+    "description"
+  );
 
   const tabs: {
     description: JSX.Element;
-    size_guide: JSX.Element;
     reviews: JSX.Element;
   } = {
     description: (
-      <div className="product-details__panel product-description-panel">
-        {product.details}
-      </div>
-    ),
-    size_guide: (
-      <Suspense
-        fallback={<MoonLoader size={30} cssOverride={cssOverride} />}
-      >
-        <SizeGuide />
-      </Suspense>
+      <div
+        className="product-details__panel product-description-panel product-description-panel--rich"
+        suppressHydrationWarning
+        dangerouslySetInnerHTML={{
+          __html: product.descriptionHtml || product.details,
+        }}
+      />
     ),
     reviews: (
       <Suspense
-        fallback={<MoonLoader size={30} cssOverride={cssOverride} />}
+        fallback={<div className="product-details__loading">Loading...</div>}
       >
         <Reviews productId={product.id} />
       </Suspense>
@@ -51,14 +46,6 @@ export default function ProductDetails({ product }: PropTypes) {
           <li
             className={
               "product-details__tab" +
-              (tabName == "size_guide" ? " product-details__tab--active" : "")
-            }
-          >
-            <button onClick={() => setTabName("size_guide")}>Size Guide</button>
-          </li>
-          <li
-            className={
-              "product-details__tab" +
               (tabName == "reviews" ? " product-details__tab--active" : "")
             }
           >
@@ -71,12 +58,7 @@ export default function ProductDetails({ product }: PropTypes) {
   );
 }
 
-const SizeGuide = dynamic(() => import("@Components/SizeGuide"));
 const Reviews = dynamic(() => import("@Components/reviews"));
-
-const cssOverride: CSSProperties = {
-  margin: "2rem auto 0 auto",
-};
 
 interface PropTypes {
   product: ProductComponentType;

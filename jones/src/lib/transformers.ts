@@ -139,6 +139,11 @@ function dedupeMediaUrls(urls: string[]): string[] {
   });
 }
 
+function normalizeRichHtml(html: string): string {
+  if (!html) return "";
+  return html.replace(/<img\b([^>]*?)\bhref=/gi, "<img$1src=");
+}
+
 // ─── Product Transformer ───
 
 export function transformProduct(bp: BackendProduct): ProductComponentType {
@@ -188,6 +193,7 @@ export function transformProduct(bp: BackendProduct): ProductComponentType {
     gender,
     sku: bp.code || bp.slug,
     details: getDescShort(bp),
+    descriptionHtml: normalizeRichHtml((bp as any).desc_safe || (bp as any).desc || ""),
     salesCount: getTimesPurchased(bp),
     color,
     sizes: sizes.length ? sizes : [8, 9, 10, 11],
@@ -215,7 +221,8 @@ export function transformProductDetail(bp: BackendProductDetail): ProductCompone
     base.mediaURLs = detailMediaURLs;
   }
 
-  base.details = bp.desc_safe || bp.desc_short_safe || bp.desc || bp.desc_short || "";
+  base.details = bp.desc_short_safe || bp.desc_short || "";
+  base.descriptionHtml = normalizeRichHtml(bp.desc_safe || bp.desc || base.descriptionHtml || "");
   base.status = bp.status ?? base.status;
   base.url = bp.url || bp.full_url || base.url || "";
   base.relatedProducts = (bp.related_products || []).map(transformProduct);
