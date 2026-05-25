@@ -3,8 +3,8 @@ import { useRef } from "react";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import { useRouter } from "next/router";
 
-import { getPathString } from "src/utils";
 import useBrandGroups from "@Hooks/useBrandGroups";
+import { getPathString } from "src/utils";
 
 export default function CollectionSection() {
   const brandGroups = Object.entries(useBrandGroups());
@@ -81,7 +81,7 @@ export default function CollectionSection() {
                   className="collections__block-image"
                   alt=""
                   layout="fill"
-                  src={brandGalleryImages[group]}
+                  src={brandGalleryImages[group] || brandGalleryImages.Other}
                   objectFit="cover"
                 />
                 <div className="collections__block-content">

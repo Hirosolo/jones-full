@@ -26,9 +26,8 @@ export default function HeaderSection() {
   const [dropdownMode, setDropdownMode] = useState<DropdownMode>(null);
   const [expandedBrandsGroup, setExpandedBrandsGroup] = useState<string | null>(null);
   const [activeBrandsGroup, setActiveBrandsGroup] = useState<string | null>(null);
-  const [categories, setCategories] = useState<BackendCategory[]>([]);
   const brandGroups = useBrandGroups();
-  const brandGroupNames = Object.keys(brandGroups);
+  const [categories, setCategories] = useState<BackendCategory[]>([]);
   const [pinnedState, setPinnedState] = useState(false);
   const scrollTop = useScrollTop();
   const headerRef = useRef<HTMLElement>(null);
@@ -70,12 +69,16 @@ export default function HeaderSection() {
   }, []);
 
   useEffect(() => {
-    if (brandGroupNames.length === 0) return;
+    const groups = Object.keys(brandGroups);
+    if (groups.length === 0) {
+      setActiveBrandsGroup(null);
+      return;
+    }
 
     if (!activeBrandsGroup || !brandGroups[activeBrandsGroup]) {
-      setActiveBrandsGroup(brandGroupNames[0]);
+      setActiveBrandsGroup(groups[0]);
     }
-  }, [activeBrandsGroup, brandGroupNames, brandGroups]);
+  }, [activeBrandsGroup, brandGroups]);
 
   const [hoveredElement, setHoveredElement] = useState<string>("");
 
@@ -85,8 +88,10 @@ export default function HeaderSection() {
     } else {
       setDropdownMode(mode);
       if (mode === "brands") {
-        if (brandGroupNames.length > 0 && !activeBrandsGroup) {
-          setActiveBrandsGroup(brandGroupNames[0]);
+        // Initialize with the first group if none active
+        const groups = Object.keys(brandGroups);
+        if (groups.length > 0 && !activeBrandsGroup) {
+          setActiveBrandsGroup(groups[0]);
         }
       }
       setExpandedBrandsGroup(null);
@@ -232,7 +237,7 @@ export default function HeaderSection() {
         {dropdownMode === "brands" && (
           <div className="header__brands-two-pane">
             <div className="header__brands-sidebar">
-              {brandGroupNames.map((group) => (
+              {Object.keys(brandGroups).map((group) => (
                 <button
                   key={group}
                   className={`header__brands-sidebar-item${

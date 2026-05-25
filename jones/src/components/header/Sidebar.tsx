@@ -28,8 +28,8 @@ export default function Sidebar() {
 
   // Brands-specific two-level navigation
   const [brandsLevel, setBrandsLevel] = useState<BrandsLevel>(null);
-  const [categories, setCategories] = useState<BackendCategory[]>([]);
   const brandGroups = useBrandGroups();
+  const [categories, setCategories] = useState<BackendCategory[]>([]);
 
   const { currentDialog, setDialog } = useDialog();
 

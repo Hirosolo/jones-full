@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
 
-import {
-  getDefaultBrandGroups,
-  getResolvedBrandGroups,
-  type BrandGroupsMap,
-} from "@Lib/api/catalog";
+import { getDefaultBrandGroups, getResolvedBrandGroups } from "@Lib/api/catalog";
 
-export default function useBrandGroups(): BrandGroupsMap {
-  const [brandGroups, setBrandGroups] = useState<BrandGroupsMap>(getDefaultBrandGroups());
+export default function useBrandGroups() {
+  const [brandGroups, setBrandGroups] = useState<Record<string, string[]>>(
+    getDefaultBrandGroups()
+  );
 
   useEffect(() => {
     let active = true;

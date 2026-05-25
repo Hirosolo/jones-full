@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from pod_shop.api.serializers import BrandListSerializer, ProductBrandListSerializer, ProductSerializer
+from pod_shop.catalog_defaults import ensure_default_brands
 from pod_shop.models import Brand, Product, ProductAttrItem
 from utils.api.common import ItemsListPagination
 
@@ -27,6 +28,7 @@ class BrandsListView(ListAPIView):
     permission_classes = [AllowAny]
 
     def get_queryset(self):
+        ensure_default_brands()
         return Brand.objects.order_by('order')
 
 
@@ -45,6 +47,7 @@ class BrandGroupsView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
+        ensure_default_brands()
         groups = {}
         for b in Brand.objects.all().order_by('order', 'name'):
             league = (b.league or '').strip() or 'Other'
@@ -119,6 +122,7 @@ class BrandProductsListView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
+        ensure_default_brands()
         user = request.user
         slug = request.GET.get('slug', '')
         b = get_object_or_404(Brand, slug=slug)

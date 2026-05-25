@@ -12,6 +12,7 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
+from pod_shop.catalog_defaults import ensure_default_brands
 from pod_shop.models import Brand, Product
 
 
@@ -32,6 +33,7 @@ def admin_api_key_required(view_func):
 @admin_api_key_required
 def admin_brand_list(request):
     """List all brands with product counts."""
+    ensure_default_brands()
     brands = Brand.objects.all().order_by('order', 'name')
 
     items = []

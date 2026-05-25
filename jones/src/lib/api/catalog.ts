@@ -1,5 +1,5 @@
-import CategoriesData from "@Data/CategoriesData.json";
 import { http } from "@Lib/apiClient";
+const CategoriesData = require("@Data/CategoriesData.json");
 import type {
   BackendBrand,
   BackendCategory,
@@ -11,24 +11,36 @@ const DEFAULT_CATEGORY: BackendCategory = {
   slug: "all",
   order: 0,
 };
-export type BrandGroupsMap = Record<string, string[]>;
+
+type BrandGroupResponse = {
+  groups?: {
+    name?: string;
+    order?: number;
+    items?: Array<{
+      name?: string;
+      slug?: string;
+      url?: string;
+      order?: number;
+    }>;
+  }[];
+};
+
+const DEFAULT_BRAND_GROUPS: Record<string, string[]> = CategoriesData.brands;
 
 export async function getBrands() {
   return http.get<BackendBrand[]>("/api/shop/brands-list/");
 }
 
-const DEFAULT_BRAND_GROUPS: BrandGroupsMap = CategoriesData.brands;
-
-type BackendBrandGroupsResponse = {
-  groups: { name: string; order: number; items: { name: string }[] }[];
-};
-
-export function getDefaultBrandGroups(): BrandGroupsMap {
+export function getDefaultBrandGroups() {
   return DEFAULT_BRAND_GROUPS;
 }
 
-function normalizeBrandGroups(response?: BackendBrandGroupsResponse | null): BrandGroupsMap {
-  const groups: BrandGroupsMap = {};
+export async function getBrandGroups() {
+  return http.get<BrandGroupResponse>("/api/shop/brand-groups/");
+}
+
+export function normalizeBrandGroups(response?: BrandGroupResponse) {
+  const groups: Record<string, string[]> = {};
   const items = response?.groups || [];
 
   items.forEach((group) => {
@@ -37,27 +49,24 @@ function normalizeBrandGroups(response?: BackendBrandGroupsResponse | null): Bra
       .map((brand) => (brand.name || "").trim())
       .filter(Boolean);
 
-    if (!groupName || brandNames.length === 0) return;
+    if (!groupName || brandNames.length === 0) {
+      return;
+    }
+
     groups[groupName] = brandNames;
   });
 
   return groups;
 }
 
-export async function getResolvedBrandGroups(): Promise<BrandGroupsMap> {
+export async function getResolvedBrandGroups() {
   try {
-    const response = await http.get<BackendBrandGroupsResponse>("/api/shop/brand-groups/");
+    const response = await getBrandGroups();
     const groups = normalizeBrandGroups(response);
     return Object.keys(groups).length > 0 ? groups : DEFAULT_BRAND_GROUPS;
   } catch {
     return DEFAULT_BRAND_GROUPS;
   }
-}
-
-export async function getBrandGroups() {
-  return http.get<{ groups: { name: string; order: number; items: BackendBrand[] }[] }>(
-    "/api/shop/brand-groups/"
-  );
 }
 
 export async function getCategories() {
