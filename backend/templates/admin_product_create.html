@@ -1051,6 +1051,15 @@
             globalError.classList.remove('visible');
         }
 
+        function notifyParent(payload) {
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({
+                    source: 'admin-product-create',
+                    ...payload,
+                }, window.location.origin);
+            }
+        }
+
         function clearFieldErrors() {
             document.querySelectorAll('[data-error-for]').forEach((node) => {
                 node.textContent = '';
@@ -1179,16 +1188,21 @@
             try {
                 const payload = await postForm(form.action, new FormData(form));
                 savingBanner.textContent = payload.message || 'Product created successfully.';
-                const targetUrl = payload.redirectUrl || '/admin/?created=1';
-                if (window.top && window.top !== window.self) {
-                    window.top.location.href = targetUrl;
-                } else {
-                    window.location.href = targetUrl;
+                notifyParent({
+                    ok: true,
+                    message: payload.message || 'Product created successfully.',
+                });
+                if (!(window.parent && window.parent !== window)) {
+                    window.location.href = payload.redirectUrl || '/admin/?created=1';
                 }
             } catch (errorPayload) {
                 savingBanner.classList.remove('visible');
                 renderFieldErrors(errorPayload?.errors || {});
                 showGlobalError(errorPayload?.message || 'Please fix the highlighted fields and try again.');
+                notifyParent({
+                    ok: false,
+                    message: errorPayload?.message || 'Please fix the highlighted fields and try again.',
+                });
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = '➕ Create Product';

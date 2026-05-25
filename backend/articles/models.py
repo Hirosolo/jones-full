@@ -91,7 +91,7 @@ class Article(models.Model):
         help_text='Ảnh đại diện bài viết'
     )
     # External URL for the featured image (set when admin pastes a URL
-    # from /acp/ Media Library instead of uploading a file).
+    # from the backend Media Library instead of uploading a file).
     featured_image_url = models.URLField(blank=True, max_length=1000)
     content = models.TextField(blank=True, help_text='Nội dung bài viết')
     content_safe = models.TextField(blank=True, help_text='Nội dung bài viết (safe)')

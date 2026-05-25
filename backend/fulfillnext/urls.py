@@ -16,7 +16,6 @@ Including another URLconf
 """
 from django.conf import settings
 from django.conf.urls.static import static
-from django.contrib import admin
 from django.urls import path, include, re_path
 from django.views.static import serve
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
@@ -39,7 +38,6 @@ def robots_txt(request):
     content = [
         "User-agent: *",
         "Disallow: /",
-        "Disallow: /acp/",
         "",
         "# This is an API server, no crawling allowed",
         "# Main website: https://fulfillnext.com/",
@@ -57,7 +55,6 @@ urlpatterns = [
     path('admin/products/create/brand/', admin_brand_inline_create_view, name='admin_brand_inline_create'),
     path('admin/products/create/tag/', admin_tag_inline_create_view, name='admin_tag_inline_create'),
     path('admin/', admin_panel_view, name='admin_panel'),
-    path('acp/', admin.site.urls),
 
     # auth API
     path('api/sample-auth/', common.sample_auth_view, name='sample_auth_api'),

@@ -221,7 +221,7 @@ class BotBlockerMiddleware:
         response = self.get_response(request)
         
         # Add security headers
-        if self._is_api_path(path) or path.startswith('/acp/'):
+        if self._is_api_path(path):
             response['X-Robots-Tag'] = 'noindex, nofollow, noarchive, nosnippet, noimageindex'
         response['X-Content-Type-Options'] = 'nosniff'
         

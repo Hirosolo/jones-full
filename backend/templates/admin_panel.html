@@ -254,6 +254,10 @@
             border-color: rgba(45, 211, 111, 0.24);
         }
 
+        .notice.hidden {
+            display: none;
+        }
+
         .tab.create {
             color: #06110a;
             background: linear-gradient(135deg, #2dd36f, #46c2ff);
@@ -324,7 +328,6 @@
                 <p>Backend panel powered by the product API.</p>
             </div>
             <nav class="tabs" aria-label="Admin sections">
-                <a class="tab" href="/acp/">Django Admin</a>
                 <a class="tab active" href="/admin/">Products</a>
             </nav>
         </header>
@@ -373,6 +376,8 @@
         {% if error_message %}
             <div class="notice">{{ error_message }}</div>
         {% endif %}
+
+        <div id="panel-notice" class="notice hidden" aria-live="polite"></div>
 
         <section class="table-wrap">
             <table>
@@ -449,6 +454,59 @@
         const createDialog = document.getElementById('create-product-dialog');
         const openCreateButton = document.getElementById('open-create-product');
         const closeCreateButton = document.getElementById('close-create-product');
+        const panelNotice = document.getElementById('panel-notice');
+        let panelNoticeTimer = null;
+
+        function showPanelNotice(message, isSuccess) {
+            if (!panelNotice) {
+                return;
+            }
+
+            if (panelNoticeTimer) {
+                window.clearTimeout(panelNoticeTimer);
+            }
+
+            panelNotice.textContent = message;
+            panelNotice.classList.toggle('success', Boolean(isSuccess));
+            panelNotice.classList.remove('hidden');
+            panelNoticeTimer = window.setTimeout(() => {
+                panelNotice.classList.add('hidden');
+            }, 5000);
+        }
+
+        const flashNotice = window.sessionStorage.getItem('adminPanelFlashNotice');
+        if (flashNotice) {
+            window.sessionStorage.removeItem('adminPanelFlashNotice');
+            try {
+                const parsed = JSON.parse(flashNotice);
+                showPanelNotice(parsed.message || '', parsed.type === 'success');
+            } catch (error) {
+                showPanelNotice(flashNotice, true);
+            }
+        }
+
+        window.addEventListener('message', (event) => {
+            if (event.origin !== window.location.origin) {
+                return;
+            }
+
+            const payload = event.data;
+            if (!payload || payload.source !== 'admin-product-create') {
+                return;
+            }
+
+            if (payload.ok) {
+                createDialog.close();
+                window.sessionStorage.setItem('adminPanelFlashNotice', JSON.stringify({
+                    type: 'success',
+                    message: payload.message || 'Product created successfully.',
+                }));
+                window.location.reload();
+                return;
+            }
+
+            showPanelNotice(payload.message || 'Unable to save product.', false);
+        });
 
         openCreateButton?.addEventListener('click', () => createDialog.showModal());
         closeCreateButton?.addEventListener('click', () => createDialog.close());

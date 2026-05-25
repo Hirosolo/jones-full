@@ -360,7 +360,7 @@ class ProductAttrItem(models.Model):
 class ProductImage(models.Model):
     """
     Hình ảnh của sản phẩm. Ảnh có thể lưu ở GCS (image field) hoặc là URL
-    external (image_url field) — admin dán URL trực tiếp từ /acp/ Media Library.
+    external (image_url field) — admin dán URL trực tiếp từ backend Media Library.
     """
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='images')
     image = ThumbnailerImageField(
@@ -420,7 +420,7 @@ class Brand(models.Model):
         upload_to=upload_product_brand_image,
         help_text='Hình ảnh logo thương hiệu.',
     )
-    # External URL for the logo (so admin can paste a URL from /acp/
+    # External URL for the logo (so admin can paste a URL from the backend media library
     # Media Library instead of uploading a file).
     logo_url = models.URLField(blank=True, max_length=1000)
     # Optional league/grouping label used by the Brands mega-menu.
