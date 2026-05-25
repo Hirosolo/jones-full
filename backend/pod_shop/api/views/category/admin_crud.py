@@ -55,6 +55,19 @@ def admin_category_list(request):
     return Response({'total': len(items), 'items': items})
 
 
+@api_view(['GET'])
+@permission_classes([AllowAny])
+@admin_api_key_required
+def admin_category_detail(request, pk):
+    """Get detail information for one category."""
+    try:
+        cat = Category.objects.get(pk=pk)
+    except Category.DoesNotExist:
+        return Response({'error': 'Category not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    return Response({'category': _serialize(cat)})
+
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 @parser_classes([MultiPartParser, FormParser, JSONParser])

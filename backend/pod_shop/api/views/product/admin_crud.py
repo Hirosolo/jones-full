@@ -16,6 +16,56 @@ from rest_framework.response import Response
 from pod_shop.models import Product, Category, Brand, Tag, ProductImage, ProductSlugAlias
 
 
+def _clean_tag_ids(data):
+    tag_ids = data.getlist('tag_ids') if hasattr(data, 'getlist') else data.get('tag_ids', [])
+    if isinstance(tag_ids, str):
+        tag_ids = [t.strip() for t in tag_ids.split(',') if t.strip()]
+    return [tag_id for tag_id in tag_ids if str(tag_id).strip()]
+
+
+def _serialize_admin_product(product):
+    image_rows = list(product.images.filter(removed=False).order_by('order'))
+    image_urls = [img.get_url() for img in image_rows if img.get_url()]
+    primary_image = image_urls[0] if image_urls else None
+
+    tag_list = list(product.tags.all().values('id', 'name', 'slug')) if hasattr(product, 'tags') else []
+
+    return {
+        'id': product.id,
+        'name': product.name,
+        'slug': product.slug,
+        'code': product.code,
+        'price': str(product.price),
+        'fakePrice': str(product.fake_price) if product.fake_price else None,
+        'status': product.status,
+        'statusDisplay': product.get_status_display(),
+        'category': {
+            'id': product.category.id,
+            'name': product.category.name,
+            'slug': product.category.slug,
+        } if product.category else None,
+        'brand': {
+            'id': product.brand.id,
+            'name': product.brand.name,
+            'slug': product.brand.slug,
+        } if product.brand else None,
+        'categorySlug': product.category.slug if product.category else '',
+        'brandSlug': product.brand.slug if product.brand else '',
+        'tagIds': [t['id'] for t in tag_list],
+        'tagSlugs': [t['slug'] for t in tag_list],
+        'tags': tag_list,
+        'isFeatured': product.is_featured,
+        'bestSeller': product.best_seller,
+        'image': primary_image,
+        'images': image_urls,
+        'descShort': getattr(product, 'desc_short', '') or '',
+        'desc': getattr(product, 'desc', '') or '',
+        'metaTitle': getattr(product, 'meta_title', '') or '',
+        'metaDesc': getattr(product, 'meta_desc', '') or '',
+        'createdAt': product.created_at.isoformat() if product.created_at else None,
+    }
+
+
 def admin_api_key_required(view_func):
     """Decorator to require X-Admin-Key header for admin API endpoints."""
     @wraps(view_func)
@@ -51,40 +101,7 @@ def admin_product_list(request):
     end = start + page_size
     products = qs[start:end]
 
-    items = []
-    for p in products:
-        image_rows = list(p.images.filter(removed=False).order_by('order'))
-        image_urls = [img.get_url() for img in image_rows if img.get_url()]
-        primary_image = image_urls[0] if image_urls else None
-
-        tag_list = list(p.tags.all().values('id', 'name', 'slug')) if hasattr(p, 'tags') else []
-
-        items.append({
-            'id': p.id,
-            'name': p.name,
-            'slug': p.slug,
-            'code': p.code,
-            'price': str(p.price),
-            'fakePrice': str(p.fake_price) if p.fake_price else None,
-            'status': p.status,
-            'statusDisplay': p.get_status_display(),
-            'category': {'id': p.category.id, 'name': p.category.name, 'slug': p.category.slug} if p.category else None,
-            'brand': {'id': p.brand.id, 'name': p.brand.name, 'slug': p.brand.slug} if p.brand else None,
-            'categorySlug': p.category.slug if p.category else '',
-            'brandSlug': p.brand.slug if p.brand else '',
-            'tagIds': [t['id'] for t in tag_list],
-            'tagSlugs': [t['slug'] for t in tag_list],
-            'tags': tag_list,
-            'isFeatured': p.is_featured,
-            'bestSeller': p.best_seller,
-            'image': primary_image,
-            'images': image_urls,
-            'descShort': getattr(p, 'desc_short', '') or '',
-            'desc': getattr(p, 'desc', '') or '',
-            'metaTitle': getattr(p, 'meta_title', '') or '',
-            'metaDesc': getattr(p, 'meta_desc', '') or '',
-            'createdAt': p.created_at.isoformat() if p.created_at else None,
-        })
+    items = [_serialize_admin_product(product) for product in products]
 
     return Response({
         'total': total,
@@ -93,6 +110,19 @@ def admin_product_list(request):
         'numPages': (total + page_size - 1) // page_size,
         'items': items,
     })
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+@admin_api_key_required
+def admin_product_detail(request, pk):
+    """Get detail information for one product."""
+    try:
+        product = Product.objects.select_related('brand', 'category').prefetch_related('images', 'tags').get(pk=pk)
+    except Product.DoesNotExist:
+        return Response({'error': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    return Response({'product': _serialize_admin_product(product)})
 
 
 @api_view(['GET'])
@@ -157,9 +187,7 @@ def admin_product_create(request):
     ProductSlugAlias.objects.filter(old_slug=product.slug).delete()
 
     # Handle tags
-    tag_ids = data.getlist('tag_ids') if hasattr(data, 'getlist') else data.get('tag_ids', [])
-    if isinstance(tag_ids, str):
-        tag_ids = [t.strip() for t in tag_ids.split(',') if t.strip()]
+    tag_ids = _clean_tag_ids(data)
     if tag_ids:
         product.tags.set(Tag.objects.filter(id__in=tag_ids))
 
@@ -260,10 +288,8 @@ def admin_product_update(request, pk):
         ProductSlugAlias.objects.filter(old_slug=product.slug).delete()
 
     # Handle tags
-    tag_ids = data.getlist('tag_ids') if hasattr(data, 'getlist') else data.get('tag_ids')
+    tag_ids = _clean_tag_ids(data)
     if tag_ids is not None:
-        if isinstance(tag_ids, str):
-            tag_ids = [t.strip() for t in tag_ids.split(',') if t.strip()]
         product.tags.set(Tag.objects.filter(id__in=tag_ids))
 
     # Handle external image URLs — if the field is present (even empty),

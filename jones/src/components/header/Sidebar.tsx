@@ -6,8 +6,10 @@ import { IoIosArrowForward, IoIosArrowBack } from "react-icons/io";
 import { BiCaretDown } from "react-icons/bi";
 
 import Form from "@Components/common/Form";
-import { CategoriesList, brandsData } from "./MenuLists";
+import { buildCategoriesList, brandsData } from "./MenuLists";
 import { getPathString } from "src/utils";
+import { getCategories } from "@Lib/api/catalog";
+import type { BackendCategory } from "src/types/backend";
 
 import { useDialog, DialogType, useCurrencyFormatter } from "@Contexts/UIContext";
 import { useAuthState } from "@Contexts/AuthContext";
@@ -25,6 +27,7 @@ export default function Sidebar() {
 
   // Brands-specific two-level navigation
   const [brandsLevel, setBrandsLevel] = useState<BrandsLevel>(null);
+  const [categories, setCategories] = useState<BackendCategory[]>([]);
 
   const { currentDialog, setDialog } = useDialog();
 
@@ -46,6 +49,22 @@ export default function Sidebar() {
       }
     }, 600);
   }, [submenuActive]);
+
+  useEffect(() => {
+    let active = true;
+    getCategories()
+      .then((items) => {
+        if (!active) return;
+        setCategories(items);
+      })
+      .catch(() => {
+        if (!active) return;
+        setCategories([{ name: "All", slug: "all", order: 0 }]);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const openBrands = () => {
     setBrandsLevel("groups");
@@ -151,7 +170,7 @@ export default function Sidebar() {
                 <li className="sidebar__links-item sidebar__links-menu">
                   <button
                     onClick={() => {
-                      setSubmenu(CategoriesList);
+                      setSubmenu(buildCategoriesList(categories));
                       setBrandsLevel(null);
                       setSubmenuActive(true);
                     }}

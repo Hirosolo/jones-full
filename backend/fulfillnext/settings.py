@@ -267,6 +267,12 @@ if isinstance(_raw_cors, list):
         _expanded_cors.extend(_split_csv(item))
     _raw_cors = _expanded_cors
 CORS_ALLOWED_ORIGINS = [origin.rstrip('/') for origin in _raw_cors]
+CORS_ALLOWED_ORIGINS = sorted(set(CORS_ALLOWED_ORIGINS + [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3001',
+]))
 CORS_ALLOW_CREDENTIALS = True
 
 _raw_csrf = config(
@@ -285,6 +291,16 @@ CSRF_TRUSTED_ORIGINS = [origin.rstrip('/') for origin in _raw_csrf]
 # Always include the Django API base URL in trusted origins
 if DJANGO_BASE_URL.rstrip('/') not in CSRF_TRUSTED_ORIGINS:
     CSRF_TRUSTED_ORIGINS.append(DJANGO_BASE_URL.rstrip('/'))
+
+# Keep local Next.js dev origins trusted even when env vars override the defaults.
+for local_origin in (
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3001',
+):
+    if local_origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(local_origin)
 
 CKEDITOR_CONFIGS = {
     'default': {

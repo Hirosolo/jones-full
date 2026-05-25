@@ -18,7 +18,6 @@ import ProductsProvider, {
 } from "@Contexts/ProductsContext";
 import { getProductsByCategory } from "@Lib/api/products";
 import { getCategories } from "@Lib/api/catalog";
-import { categories } from "@Components/header/MenuLists";
 import { ProductPlaceholderImg } from "src/constants";
 import { getPathString } from "src/utils";
 
@@ -144,16 +143,14 @@ export const getStaticPaths: GetStaticPaths = async () => {
   try {
     const cats = await getCategories();
     paths = cats.map((c) => ({
-      params: { categoryId: [getPathString(c.slug)] },
+        params: { categoryId: [getPathString(c.slug || "all")] },
     }));
   } catch (err) {
     console.error("[CategoryPage] Failed to fetch categories:", err);
   }
 
   if (!paths.length) {
-    paths = ["all", ...categories].map((category) => ({
-      params: { categoryId: [getPathString(category)] },
-    }));
+      paths = [{ params: { categoryId: ["all"] } }];
   }
 
   return {
@@ -163,12 +160,23 @@ export const getStaticPaths: GetStaticPaths = async () => {
 };
 
 export const getStaticProps: GetStaticProps = async function ({ params }) {
-  const [category = "all"] = params?.categoryId as string[];
+  const [category = "all"] = params?.categoryId as string[]; 
+  let resolvedCategory = category;
+
+  try {
+    const cats = await getCategories();
+    const slugs = cats.map((c) => getPathString(c.slug || "all"));
+    if (!slugs.includes(resolvedCategory)) {
+      resolvedCategory = slugs[0] || "all";
+    }
+  } catch {
+    resolvedCategory = "all";
+  }
 
   let products: ProductComponentType[] = [];
 
   try {
-    const data = await getProductsByCategory(category);
+    const data = await getProductsByCategory(resolvedCategory);
     products = data.products;
   } catch (err) {
     console.error("[CategoryPage] Failed to fetch category products:", err);
@@ -186,7 +194,7 @@ export const getStaticProps: GetStaticProps = async function ({ params }) {
     props: {
       products,
       count: products.length,
-      categoryId: category ?? "",
+      categoryId: resolvedCategory ?? "",
       productImagePlaceholders,
     },
     revalidate: 300,

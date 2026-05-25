@@ -3,13 +3,19 @@ import { getPathString } from "src/utils";
 
 const CategoriesData = require("@Data/CategoriesData.json");
 
+export interface CategoryMenuItem {
+  name: string;
+  slug?: string;
+}
+
 // ── BRANDS raw data (for dynamic rendering in Header & Sidebar) ─────────────
 export const brandsData: Record<string, string[]> = CategoriesData.brands;
 
 // ── CATEGORIES ──────────────────────────────────────────────────────────────
 export const categories: string[] = CategoriesData.categories;
 
-export const CategoriesList = [
+export function buildCategoriesList(categoryItems: CategoryMenuItem[]) {
+  return [
   <li key="view-all" className="sidebar__links-item sidebar__links-accordion">
     <Link href="/category/all">
       <a className="sidebar__anchor" style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
@@ -17,13 +23,14 @@ export const CategoriesList = [
       </a>
     </Link>
   </li>,
-  ...categories.map((name) => (
-    <li key={name} className="sidebar__links-item sidebar__links-accordion">
-      <Link href={"/category/" + getPathString(name)}>
+  ...categoryItems.map((category) => (
+    <li key={category.slug || category.name} className="sidebar__links-item sidebar__links-accordion">
+      <Link href={"/category/" + getPathString(category.slug || category.name)}>
         <a className="sidebar__anchor" style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-          {name}
+          {category.name}
         </a>
       </Link>
     </li>
   ))
-];
+  ];
+}

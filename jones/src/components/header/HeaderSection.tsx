@@ -9,8 +9,10 @@ import { IoIosArrowForward } from "react-icons/io";
 
 import Logo from "@Components/common/Logo";
 import ToolTip from "@Components/common/ToolTip";
-import { CategoriesList, brandsData, categories } from "./MenuLists";
+import { brandsData } from "./MenuLists";
 import { getPathString } from "src/utils";
+import { getCategories } from "@Lib/api/catalog";
+import type { BackendCategory } from "src/types/backend";
 
 import useScrollTop from "@Hooks/useScrollTop";
 import { DialogType, useCurrencyFormatter, useDialog } from "@Contexts/UIContext";
@@ -24,6 +26,7 @@ export default function HeaderSection() {
   const [dropdownMode, setDropdownMode] = useState<DropdownMode>(null);
   const [expandedBrandsGroup, setExpandedBrandsGroup] = useState<string | null>(null);
   const [activeBrandsGroup, setActiveBrandsGroup] = useState<string | null>(null);
+  const [categories, setCategories] = useState<BackendCategory[]>([]);
   const [pinnedState, setPinnedState] = useState(false);
   const scrollTop = useScrollTop();
   const headerRef = useRef<HTMLElement>(null);
@@ -46,6 +49,22 @@ export default function HeaderSection() {
     };
     Router.events.on("routeChangeStart", hideDropdown);
     return () => Router.events.off("routeChangeStart", hideDropdown);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    getCategories()
+      .then((items) => {
+        if (!active) return;
+        setCategories(items);
+      })
+      .catch(() => {
+        if (!active) return;
+        setCategories([{ name: "All", slug: "all", order: 0 }]);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const [hoveredElement, setHoveredElement] = useState<string>("");
@@ -187,11 +206,13 @@ export default function HeaderSection() {
                 </a>
               </Link>
             </div>
-            {categories.map((name: string) => (
-              <div key={name} className="header__brands-group">
-                <Link href={"/category/" + getPathString(name)}>
+            {categories
+              .filter((category) => category.slug !== "all")
+              .map((category) => (
+              <div key={category.slug} className="header__brands-group">
+                <Link href={"/category/" + getPathString(category.slug || category.name)}>
                   <a className="header__brands-group-btn header__brands-group-btn--link">
-                    {name}
+                    {category.name}
                   </a>
                 </Link>
               </div>

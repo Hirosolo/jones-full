@@ -54,6 +54,32 @@ def admin_brand_list(request):
     })
 
 
+@api_view(['GET'])
+@permission_classes([AllowAny])
+@admin_api_key_required
+def admin_brand_detail(request, pk):
+    """Get detail information for one brand."""
+    try:
+        b = Brand.objects.get(pk=pk)
+    except Brand.DoesNotExist:
+        return Response({'error': 'Brand not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    num_products = Product.objects.filter(brand=b, status='A').count()
+    return Response({
+        'brand': {
+            'id': b.id,
+            'name': b.name,
+            'slug': b.slug,
+            'desc': b.desc or '',
+            'logo': b.get_logo_url() or None,
+            'logoUrl': b.logo_url or '',
+            'order': b.order,
+            'league': b.league or '',
+            'numProducts': num_products,
+        }
+    })
+
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 @parser_classes([MultiPartParser, FormParser, JSONParser])

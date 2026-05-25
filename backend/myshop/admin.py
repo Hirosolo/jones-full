@@ -46,7 +46,7 @@ class ProductVariantAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-	list_display = ('name', 'code', 'slug', 'price', 'category', 'brand', 'is_available', 'edit_link')
+	list_display = ('name', 'code', 'slug', 'get_product_price', 'category', 'brand', 'is_available', 'edit_link')
 	search_fields = ('name', 'code', 'slug')
 	readonly_fields = ('code', 'created_at', 'updated_at')
 	form = ProductAdminForm

@@ -78,3 +78,10 @@ final-dump.sql
 # Local-only tooling — sync scripts, .xlsx reports, sample WC payloads.
 # Kept out of git so a Vercel redeploy never sees them.
 tools/
+
+
+backend/ADMIN_API_ROUTES.md
+
+
+/FRONTEND_API_ROUTES.md
+/ROUTE_CONTEXT.md
