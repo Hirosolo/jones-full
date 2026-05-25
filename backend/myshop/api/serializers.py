@@ -218,6 +218,7 @@ class ProductSerializer(serializers.ModelSerializer):
     product_review_count = serializers.SerializerMethodField()
     product_average_rating = serializers.SerializerMethodField()
     is_wishlisted = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
 
     @extend_schema_field(serializers.CharField)
     def get_preview_picture(self, obj: Product):
@@ -295,12 +296,19 @@ class ProductSerializer(serializers.ModelSerializer):
             return qs.exists()
         return False
 
+    @extend_schema_field(serializers.CharField())
+    def get_status(self, obj: Product):
+        """
+        Trạng thái sản phẩm cho frontend.
+        """
+        return 'active' if obj.is_available else 'inactive'
+
     class Meta:
         model = Product
         fields = (
             'id',
             'name', 'slug', 'code', 'desc_short_safe', 'desc_safe', 'price_origin', 'preview_picture',
-            'price_promo', 'is_available', 'category', 'brand', 'tags', 'url', 'full_url',
+            'price_promo', 'is_available', 'status', 'category', 'brand', 'tags', 'url', 'full_url',
             'is_sale', 'sale_percentage', 'times_purchased', 'color_images', 'variants_by_color',
             'product_review_count', 'product_average_rating', 'is_wishlisted'
         )
@@ -518,6 +526,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     product_review_count = serializers.SerializerMethodField()
     product_average_rating = serializers.SerializerMethodField()
     is_wishlisted = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
 
     @extend_schema_field(OpenGraphSerializer)
     def get_open_graph(self, obj: Product):
@@ -617,13 +626,20 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             return qs.exists()
         return False
 
+    @extend_schema_field(serializers.CharField())
+    def get_status(self, obj: Product):
+        """
+        Trạng thái sản phẩm cho frontend.
+        """
+        return 'active' if obj.is_available else 'inactive'
+
     class Meta:
         model = Product
         fields = (
             'id',
             'name', 'slug', 'code', 'desc_short_safe', 'color_images',
             'desc_safe', 'seller_notes_safe', 'price_origin', 'price_promo',
-            'stock', 'is_available', 'category', 'brand', 'tags',
+            'stock', 'is_available', 'status', 'category', 'brand', 'tags',
             'cross_sell', 'url', 'full_url', 'open_graph', 'related_products', 'variants_by_color',
             'product_review_count', 'product_average_rating', 'is_wishlisted'
         )

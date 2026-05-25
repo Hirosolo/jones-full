@@ -49,6 +49,8 @@ export interface User {
 export interface Product {
   id: string;
   slug?: string;
+  url?: string;
+  status?: string;
   title: string;
   price: number;
   discount: number;
@@ -118,7 +120,6 @@ export interface ProductComponentType extends Product {
   blurDataUrl?: string;
   ratings: number;
   dateAdded: string;
-  shortDetails?: string;
   categoryName?: string;
   brandName?: string;
   openGraph?: {

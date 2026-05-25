@@ -5,13 +5,19 @@ import { ProductComponentType } from "src/types/shared";
 
 export default function ProductDetails({ product }: PropTypes) {
   const [tabName, setTabName] = useState<
-    "size_guide" | "reviews"
-  >("size_guide");
+    "description" | "size_guide" | "reviews"
+  >("description");
 
   const tabs: {
+    description: JSX.Element;
     size_guide: JSX.Element;
     reviews: JSX.Element;
   } = {
+    description: (
+      <div className="product-details__panel product-description-panel">
+        {product.details}
+      </div>
+    ),
     size_guide: (
       <Suspense
         fallback={<MoonLoader size={30} cssOverride={cssOverride} />}
@@ -32,6 +38,16 @@ export default function ProductDetails({ product }: PropTypes) {
     <div className="product-details">
       <div className="product-details__tabs">
         <ul>
+          <li
+            className={
+              "product-details__tab" +
+              (tabName == "description" ? " product-details__tab--active" : "")
+            }
+          >
+            <button onClick={() => setTabName("description")}>
+              Description
+            </button>
+          </li>
           <li
             className={
               "product-details__tab" +

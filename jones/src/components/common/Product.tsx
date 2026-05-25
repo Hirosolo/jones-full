@@ -1,6 +1,6 @@
 import type { ProductComponentType } from "src/types/shared";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { AiOutlineHeart, AiFillHeart } from "react-icons/ai";
@@ -16,8 +16,6 @@ import { useCurrencyFormatter } from "@Contexts/UIContext";
 function isRemoteImageUrl(url: string) {
   return /^https?:\/\//i.test(url) || url.startsWith("//");
 }
-
-const loggedProductDebugIds = new Set<string>();
 
 export default function Product(props: ProductComponentType) {
   const {
@@ -45,20 +43,6 @@ export default function Product(props: ProductComponentType) {
   const activeImage = mediaURLs[imageIndex % MAX_IMAGE_SLIDES] || mediaURLs[0];
   const currentImage = activeImage || ProductPlaceholderImg;
   const productHref = `/product/${getPathString(slug || id)}`;
-
-  useEffect(() => {
-    if (loggedProductDebugIds.has(id)) {
-      return;
-    }
-
-    loggedProductDebugIds.add(id);
-    console.log("[Product image debug]", {
-      id,
-      title,
-      mediaURLs,
-      activeImage: currentImage,
-    });
-  }, [id, title, mediaURLs, currentImage]);
 
   const handleWishlistAction = () => {
     if (isOnWishlist) {
@@ -149,17 +133,17 @@ export default function Product(props: ProductComponentType) {
               </div>
               <p className="product__price">
                 <span className="product__amount">
-                  {format(price - discount)}
+                  {format(price)}
                 </span>
 
                 {discount ? (
                   <>
                     <span className="product__discount-percentage">
-                      {Math.floor((discount / price) * 100)}% off
+                      {Math.floor((discount / (price + discount)) * 100)}% off
                     </span>
                     <span className="product__old-price">
                       <span className="product__old-amount">
-                        {format(price)}
+                        {format(price + discount)}
                       </span>
                     </span>
                   </>

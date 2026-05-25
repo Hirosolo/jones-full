@@ -101,6 +101,25 @@ function getAverageRating(bp: BackendProduct): number {
   return (bp as any).product_average_rating ?? (bp as any).productAverageRating ?? 0;
 }
 
+function normalizeAvailability(bp: BackendProduct | BackendProductDetail): boolean {
+  const status = String((bp as any).status ?? "").trim().toLowerCase();
+  if (status) {
+    return status === "active" || status === "a";
+  }
+
+  const explicitAvailability = (bp as any).is_available ?? (bp as any).isAvailable;
+  if (typeof explicitAvailability === "boolean") {
+    return explicitAvailability;
+  }
+
+  const stock = (bp as any).stock;
+  if (typeof stock === "number") {
+    return stock > 0;
+  }
+
+  return false;
+}
+
 function getDescShort(bp: BackendProduct): string {
   return (
     (bp as any).desc_short_safe ||
@@ -157,6 +176,8 @@ export function transformProduct(bp: BackendProduct): ProductComponentType {
     adminId: (bp as any).id || null,
     title: bp.name,
     slug: bp.slug,
+    url: (bp as any).url || (bp as any).full_url || "",
+    status: (bp as any).status,
     categoryName: bp.category?.name || "",
     brandName: bp.brand?.name || "",
     price,
@@ -171,8 +192,7 @@ export function transformProduct(bp: BackendProduct): ProductComponentType {
     color,
     sizes: sizes.length ? sizes : [8, 9, 10, 11],
     tags: tagNames,
-    isAvailable: (bp as any).is_available,
-    shortDetails: getDescShort(bp),
+    isAvailable: normalizeAvailability(bp),
     year: isNaN(year) ? new Date().getFullYear() : year,
     type,
     ratings: getAverageRating(bp),
@@ -195,14 +215,16 @@ export function transformProductDetail(bp: BackendProductDetail): ProductCompone
     base.mediaURLs = detailMediaURLs;
   }
 
-  base.details = bp.desc_safe || bp.desc || "";
-  base.shortDetails = bp.desc_short_safe || bp.desc_short || getDescShort(bp);
+  base.details = bp.desc_safe || bp.desc_short_safe || bp.desc || bp.desc_short || "";
+  base.status = bp.status ?? base.status;
+  base.url = bp.url || bp.full_url || base.url || "";
   base.relatedProducts = (bp.related_products || []).map(transformProduct);
   base.crossSell = (bp.cross_sell || []).map(transformProduct);
   base.openGraph = bp.open_graph ?? null;
   base.productReviewCount = bp.product_review_count ?? 0;
   base.productAverageRating = bp.product_average_rating ?? 0;
   base.isWishlisted = bp.is_wishlisted ?? false;
+  base.isAvailable = normalizeAvailability(bp);
 
   // expose numeric backend id for admin linking
   (base as any).adminId = (bp as any).id || (base as any).adminId || null;

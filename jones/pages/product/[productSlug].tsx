@@ -34,42 +34,41 @@ const ProductPage: NextPage<ProductPageType> = ({
     brandName,
     isAvailable,
     tags,
-    shortDetails,
     productReviewCount,
     productAverageRating,
   } = product;
 
-  const cartPrice = (price - discount) * 1;
+  const salePrice = price;
+  const originalPrice = discount ? price + discount : price;
   const percentageOff = discount
-    ? `${Math.floor((discount / price) * 100)}% off`
+    ? `${Math.floor((discount / originalPrice) * 100)}% off`
     : "";
-  const productTags = (tags || []).join(", ");
-  const availabilityLabel = isAvailable ? "In stock" : "Out of stock";
+  const productTags = tags || [];
+  const availabilityLabel = isAvailable
+    ? "In stock"
+    : "Out of stock";
+  const shortDescription = product.details
+    ? product.details.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim()
+    : "";
+
+  console.log("[ProductPage] product:", product);
 
   return (
     <>
       <SEO title={product.title} />
 
       <div className="product-view">
-        <div className="product-view__media">
-          <ProductGallery
-            key={`gallery-${id}`}
-            product={product}
-            images={product.mediaURLs}
-            dimensions={imageDimensions}
-            blurDataUrls={blurDataUrls}
-          />
-
-          {product.details ? (
-            <div
-              className="product-view__description"
-              dangerouslySetInnerHTML={{ __html: product.details }}
-            />
-          ) : null}
-        </div>
+        <ProductGallery
+          key={`gallery-${id}`}
+          product={product}
+          images={product.mediaURLs}
+          dimensions={imageDimensions}
+          blurDataUrls={blurDataUrls}
+        />
 
         <div className="product-view__cart">
           <h1 className="product-view__name">{title}</h1>
+          <div className="product-view__separator" />
           <div style={{ marginTop: 8 }}>
             {/** Only show admin edit link when backend numeric id is available */}
             {(product as any).adminId ? (
@@ -83,16 +82,27 @@ const ProductPage: NextPage<ProductPageType> = ({
               </a>
             ) : null}
           </div>
+
+          <div className="product-view__pricing">
+            {discount ? (
+              <span className="product-view__sale-badge">{percentageOff}</span>
+            ) : null}
+            <p className="product-view__price product-view__price--sale">
+              <span className="product-view__sale-price">{format(salePrice)}</span>
+              {discount ? (
+                <span className="product-view__original-price">{format(originalPrice)}</span>
+              ) : null}
+            </p>
+            {discount ? (
+              <p className="product-view__deal-copy">
+                Limited-time offer — you save {format(discount)} today.
+              </p>
+            ) : (
+              <p className="product-view__deal-copy">Best price available right now.</p>
+            )}
+          </div>
+
           <RatingStars count={productAverageRating ?? ratings} />
-
-          {shortDetails ? (
-            <div
-              className="product-view__short-description"
-              dangerouslySetInnerHTML={{ __html: shortDetails }}
-            />
-          ) : null}
-
-          <ProductDetails product={product} />
 
           <div className="product-view__details">
             <p className="product-view__details-info">
@@ -107,29 +117,55 @@ const ProductPage: NextPage<ProductPageType> = ({
             <p className="product-view__details-info">
               <strong>Reviews:</strong> {productReviewCount ?? 0}
             </p>
-            <p className="product-view__details-info">
-              <strong>Tags:</strong> {productTags || "N/A"}
-            </p>
+            <div className="product-view__details-info product-view__tags-row">
+              <strong>Tags:</strong>
+              <div className="product-view__tags">
+                {productTags.length ? (
+                  productTags.map((tag) => (
+                    <span className="product-view__tag" key={tag}>
+                      #{tag}
+                    </span>
+                  ))
+                ) : (
+                  <span>N/A</span>
+                )}
+              </div>
+            </div>
           </div>
-
-          <p className="product-view__price">
-            {format(cartPrice)} <span>{percentageOff}</span>
-          </p>
 
           <p className="product-view__sold">
             {salesCount ?? 0} Sold / Available
           </p>
+
+          <div className="product-view__separator" />
+
+          {shortDescription ? (
+            <p className="product-view__summary">{shortDescription}</p>
+          ) : null}
+
+          <div className="product-view__separator" />
+
+          <a
+            className="product-view__buy"
+            href={product.url || `/product/${product.slug || product.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Buy now
+          </a>
 
           <ProductCartForm key={product.id} product={product} />
           <p className="product-view__shipping-info">Shipping is calculated at checkout.</p>
 
           <ShareButton
             title={product.title}
-            description={shortDetails || product.details}
+            description={product.details}
             image={product.mediaURLs[0]}
             hashtags="#jonesstore"
           />
         </div>
+
+        <ProductDetails product={product} />
       </div>
 
       <div className="related-products">
