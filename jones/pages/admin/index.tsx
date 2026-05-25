@@ -7,6 +7,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { getSliders } from '@Lib/api/cms'
 import type { SiteContent, HeroSlide, FaqItem, SocialLink, HomeContent, ProductSeoOverride } from '@Data/defaultContent'
 import { defaultContent } from '@Data/defaultContent'
 
@@ -3011,6 +3012,36 @@ export default function AdminPage() {
     }))
   }
 
+  const [importingSlides, setImportingSlides] = useState(false)
+
+  const importSlidersFromServer = async () => {
+    setImportingSlides(true)
+    try {
+      const res = await getSliders()
+      const sliders = (res?.sliders || []) as any[]
+      const mapped = sliders.map(s => ({
+        title: s.title || '',
+        description: s.desc_safe || s.desc || '',
+        buttonText: s.button_text || s.buttonText || 'SHOP NOW',
+        image: s.image_url || s.image || s.image_url || '',
+        link: s.link || s.url || '/',
+      }))
+      if (mapped.length) {
+        updateHomeSection('hero', 'defaultSlides', mapped)
+        updateHomeSection('hero', 'enabled', true)
+        setHasChanges(true)
+        showToast(`Imported ${mapped.length} slides from server`, 'success')
+      } else {
+        showToast('No sliders found on server', 'success')
+      }
+    } catch (err: any) {
+      console.error('Import sliders failed', err)
+      showToast(err?.message || 'Failed to import sliders', 'error')
+    } finally {
+      setImportingSlides(false)
+    }
+  }
+
   // ─── Product SEO Updaters ───
   const addProductSeo = () => {
     updateContent(prev => ({
@@ -3212,6 +3243,16 @@ export default function AdminPage() {
                 />
               </div>
               <h3 style={{ marginTop: '1.5rem' }}>Slides</h3>
+              <div style={{ marginBottom: '0.5rem' }}>
+                <button
+                  type='button'
+                  className='admin-btn'
+                  onClick={importSlidersFromServer}
+                  disabled={importingSlides}
+                >
+                  {importingSlides ? 'Importing...' : 'Import from server'}
+                </button>
+              </div>
               {content.home.hero.defaultSlides.map((slide, i) => (
                 <div key={i} className='admin-list-item'>
                   <div className='admin-list-item-header'>
