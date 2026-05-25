@@ -23,11 +23,15 @@ class HomeSliderSerializer(serializers.ModelSerializer):
 
     def get_image_url(self, obj):
         request = self.context.get('request')
-        if obj.image and hasattr(obj.image, 'url'):
-            url = obj.image.url
-            if request:
-                return request.build_absolute_uri(url)
-            return url
+        if obj.image:
+            raw_name = getattr(obj.image, 'name', '') or ''
+            if raw_name.startswith(('http://', 'https://', '/')):
+                return raw_name
+            if hasattr(obj.image, 'url'):
+                url = obj.image.url
+                if request:
+                    return request.build_absolute_uri(url)
+                return url
         return ''
 
 
