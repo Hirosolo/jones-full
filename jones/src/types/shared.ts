@@ -48,6 +48,7 @@ export interface User {
 
 export interface Product {
   id: string;
+  slug?: string;
   title: string;
   price: number;
   discount: number;
@@ -115,4 +116,15 @@ export interface ProductComponentType extends Product {
   dateAdded: string;
   categoryName?: string;
   brandName?: string;
+  openGraph?: {
+    title: string;
+    description: string;
+    images: string[];
+    url: string;
+  } | null;
+  productReviewCount?: number;
+  productAverageRating?: number;
+  isWishlisted?: boolean;
+  relatedProducts?: ProductComponentType[];
+  crossSell?: ProductComponentType[];
 }

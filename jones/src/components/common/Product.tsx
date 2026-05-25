@@ -32,6 +32,7 @@ export default function Product(props: ProductComponentType) {
     ratings,
     sku,
     id,
+    slug,
     blurDataUrl,
   } = props;
 
@@ -43,6 +44,7 @@ export default function Product(props: ProductComponentType) {
   const timer = useRef<ReturnType<typeof setInterval>>();
   const activeImage = mediaURLs[imageIndex % MAX_IMAGE_SLIDES] || mediaURLs[0];
   const currentImage = activeImage || ProductPlaceholderImg;
+  const productHref = `/product/${getPathString(slug || id)}`;
 
   useEffect(() => {
     if (loggedProductDebugIds.has(id)) {
@@ -82,7 +84,7 @@ export default function Product(props: ProductComponentType) {
         setImageIndex(0);
       }}
     >
-      <Link href={`/product/${getPathString(title + " " + sku)}`}>
+      <Link href={productHref}>
         <a>
           <div className="product__wrapper">
             <div className="product__image">
@@ -91,7 +93,6 @@ export default function Product(props: ProductComponentType) {
                   src={currentImage}
                   className={clsx("product__image-img", "product__image-img--active")}
                   style={{ objectFit: "contain" }}
-                  alt=""
                   onError={(event) => {
                     console.log("[Product image error]", {
                       id,

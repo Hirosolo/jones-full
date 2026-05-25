@@ -114,7 +114,25 @@ export interface BackendProductDetail extends BackendProduct {
   images: string[];
   thumbnails: BackendPhotoGalleryItem[];
   related_products: BackendProduct[];
-  variants: BackendProductVariant[];
+  cross_sell: BackendProduct[];
+  variants_by_color: Record<
+    string,
+    {
+      color: { name: string; value: string; color_code?: string };
+      sizes: {
+        size: { name: string; value: string; order?: number };
+        sku: string;
+        price_origin: string;
+        price_promo?: string;
+      }[];
+    }
+  >;
+  color_images: Array<{
+    alt: string;
+    url: string;
+    color: { name: string; value: string; color_code?: string };
+    order: number;
+  }>;
   open_graph: BackendOpenGraph;
 }
 
@@ -138,7 +156,8 @@ export interface BackendReviewUser {
 
 export interface BackendReview {
   id: number;
-  user: BackendReviewUser;
+  user?: BackendReviewUser;
+  profile?: BackendReviewUser;
   rating: number;
   subject?: string;
   content_safe?: string;

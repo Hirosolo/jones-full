@@ -20,6 +20,7 @@ export default function CartProductItem({
   if (!cartItem || !product) {
     return null;
   }
+  const productHref = `/product/${getPathString(product.slug || product.id)}`;
   return (
     <li
       className="cart__product"
@@ -35,9 +36,7 @@ export default function CartProductItem({
         layout="fixed"
         alt=""
       />
-      <Link
-        href={`/product/${getPathString(product.title + " " + product.sku)}`}
-      >
+      <Link href={productHref}>
         <a className="cart__product-title">{product.title}</a>
       </Link>
       <span className="cart__product-gender">{product.gender}</span>

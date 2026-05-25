@@ -145,6 +145,7 @@ export function transformProduct(bp: BackendProduct): ProductComponentType {
     id: String(bp.code || bp.slug),
     adminId: (bp as any).id || null,
     title: bp.name,
+    slug: bp.slug,
     categoryName: bp.category?.name || "",
     brandName: bp.brand?.name || "",
     price: fakePrice,
@@ -179,6 +180,13 @@ export function transformProductDetail(bp: BackendProductDetail): ProductCompone
   }
 
   base.details = bp.desc || bp.desc_short || "";
+  base.relatedProducts = (bp.related_products || []).map(transformProduct);
+  base.crossSell = (bp.cross_sell || []).map(transformProduct);
+  base.openGraph = bp.open_graph ?? null;
+  base.productReviewCount = bp.product_review_count ?? 0;
+  base.productAverageRating = bp.product_average_rating ?? 0;
+  base.isWishlisted = bp.is_wishlisted ?? false;
+
   // expose numeric backend id for admin linking
   (base as any).adminId = (bp as any).id || (base as any).adminId || null;
   base.categoryName = bp.category?.name || base.categoryName || "";
@@ -217,8 +225,9 @@ export function transformWishlistItem(bw: BackendWishlistItem): WishlistType {
 // ─── Review Transformer ───
 
 export function transformReview(br: BackendReview): Review {
+  const reviewer = br.profile || br.user;
   return {
-    userId: br.user?.username || "anonymous",
+    userId: reviewer?.full_name || reviewer?.username || "anonymous",
     productId: "",
     comment: br.content_safe || br.subject || "",
     rating: br.rating,
