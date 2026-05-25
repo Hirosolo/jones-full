@@ -145,6 +145,8 @@ export function transformProduct(bp: BackendProduct): ProductComponentType {
     id: String(bp.code || bp.slug),
     adminId: (bp as any).id || null,
     title: bp.name,
+    categoryName: bp.category?.name || "",
+    brandName: bp.brand?.name || "",
     price: fakePrice,
     discount,
     shippingCost: 0,
@@ -179,6 +181,8 @@ export function transformProductDetail(bp: BackendProductDetail): ProductCompone
   base.details = bp.desc || bp.desc_short || "";
   // expose numeric backend id for admin linking
   (base as any).adminId = (bp as any).id || (base as any).adminId || null;
+  base.categoryName = bp.category?.name || base.categoryName || "";
+  base.brandName = bp.brand?.name || base.brandName || "";
   return base;
 }
 

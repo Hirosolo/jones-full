@@ -517,14 +517,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   return proxyToBackend(req, res, pathSegments)
 }
 
-function handleMissingAdminKey(req: NextApiRequest, res: NextApiResponse, pathSegments: string[]) {
+async function handleMissingAdminKey(req: NextApiRequest, res: NextApiResponse, pathSegments: string[]) {
   const method = req.method || 'GET'
   const [section, id, action] = pathSegments
 
   if (method === 'GET') {
     if (section === 'products') {
       if (id === 'options') {
-        return res.status(200).json({ categories: [], brands: [], tags: [] })
+        try {
+          const [catRes, brandRes, tagRes] = await Promise.all([
+            fetch(`${DJANGO_BASE_URL}/api/shop/categories-list/`),
+            fetch(`${DJANGO_BASE_URL}/api/shop/brands-list/`),
+            fetch(`${DJANGO_BASE_URL}/api/shop/tags-list/`)
+          ])
+          const categories = catRes.ok ? await catRes.json() : []
+          const brands = brandRes.ok ? await brandRes.json() : []
+          const tags = tagRes.ok ? await tagRes.json() : []
+          
+          return res.status(200).json({
+            categories: categories.map((c: any, i: number) => ({ ...c, id: c.id || c.slug, numProducts: c.num_product })),
+            brands: brands.map((b: any, i: number) => ({ ...b, id: b.id || b.slug, numProducts: b.num_product })),
+            tags: tags.map((t: any, i: number) => ({ ...t, id: t.id || t.slug, numProducts: t.num_product }))
+          })
+        } catch (e) {
+          return res.status(200).json({ categories: [], brands: [], tags: [] })
+        }
       }
       if (id) {
         return res.status(404).json({ error: 'Not found' })
@@ -535,6 +552,27 @@ function handleMissingAdminKey(req: NextApiRequest, res: NextApiResponse, pathSe
     if (section === 'brands' || section === 'categories' || section === 'tags') {
       if (id) {
         return res.status(404).json({ error: 'Not found' })
+      }
+      
+      const endpointMap: Record<string, string> = {
+        'brands': 'brands-list',
+        'categories': 'categories-list',
+        'tags': 'tags-list'
+      }
+      
+      try {
+        const response = await fetch(`${DJANGO_BASE_URL}/api/shop/${endpointMap[section]}/`)
+        if (response.ok) {
+          const data = await response.json()
+          const items = data.map((item: any, idx: number) => ({
+            ...item,
+            id: item.id || item.slug,
+            numProducts: item.num_product
+          }))
+          return res.status(200).json({ total: items.length, items })
+        }
+      } catch (err) {
+        // Fallback below
       }
       return res.status(200).json({ total: 0, items: [] })
     }

@@ -23,6 +23,8 @@ export default function Product(props: ProductComponentType) {
   const {
     small = false,
     title,
+    categoryName,
+    brandName,
     price,
     discount,
     mediaURLs,
@@ -62,6 +64,8 @@ export default function Product(props: ProductComponentType) {
     }
     addToWishlist(props);
   };
+
+  const productMeta = [categoryName, brandName].filter(Boolean).join(" · ");
 
   return (
     <li
@@ -134,10 +138,10 @@ export default function Product(props: ProductComponentType) {
             </div>
             <article className="product__info">
               <header>
-                <p className="product__type">{gender}</p>
                 <h3 title={title} className="product__title">
                   {title}
                 </h3>
+                <p className="product__type">{productMeta}</p>
               </header>
               <div className="product__rating">
                 <RatingStars count={ratings} />
