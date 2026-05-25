@@ -42,8 +42,8 @@ Shared wrapper paths are written the same way the code uses them, so `/shop/...`
 | Login, logout, and token refresh | `frontend/src/sections/dialog/LoginDialog.tsx`, `frontend/src/components/my-account/MyAccountSidebar.tsx` | `authApi`, `usersApi` | `/auth/token/refresh/`, `/auth/logout/`, `/auth/google/`, `/auth/user/` | Authentication flow and signed-in session management |
 | Admin console content and assets | `frontend/src/app/admin/page.tsx` | direct `fetch()` calls | `/api/admin/auth`, `/api/admin/content`, `/api/admin/media`, `/api/admin/upload`, `/api/admin/revalidate` | Admin login, CMS content editing, media library, upload, and cache purge |
 | Admin products | `frontend/src/app/admin/page.tsx` | direct `fetch()` calls | `/api/admin/products`, `/api/admin/products/[id]`, `/api/admin/products/options` | Admin product list, create, update, delete, and option helpers |
-| Admin brands | `frontend/src/app/admin/page.tsx` | direct `fetch()` calls | `/api/admin/brands`, `/api/admin/brands/[id]` | Admin brand CRUD |
-| Admin categories | `frontend/src/app/admin/page.tsx` | direct `fetch()` calls | `/api/admin/categories`, `/api/admin/categories/[id]` | Admin category CRUD |
+| Admin brands | `frontend/src/app/admin/page.tsx` | direct `fetch()` calls | `/api/admin/brands`, `/api/admin/brands/[id]` | Admin brand CRUD. Backend mapping: `GET /api/admin/brands -> /api/shop/admin-brands/`, `POST /api/admin/brands -> /api/shop/admin-brands/create/`, `GET /api/admin/brands/[id] -> /api/shop/admin-brands/<id>/`, `PUT/PATCH /api/admin/brands/[id] -> /api/shop/admin-brands/<id>/update/`, `DELETE /api/admin/brands/[id] -> /api/shop/admin-brands/<id>/delete/` |
+| Admin categories | `frontend/src/app/admin/page.tsx` | direct `fetch()` calls | `/api/admin/categories`, `/api/admin/categories/[id]` | Admin category CRUD. Backend mapping: `GET /api/admin/categories -> /api/shop/admin-categories/`, `POST /api/admin/categories -> /api/shop/admin-categories/create/`, `GET /api/admin/categories/[id] -> /api/shop/admin-categories/<id>/`, `PUT/PATCH /api/admin/categories/[id] -> /api/shop/admin-categories/<id>/update/`, `DELETE /api/admin/categories/[id] -> /api/shop/admin-categories/<id>/delete/` |
 | Admin tags | `frontend/src/app/admin/page.tsx` | direct `fetch()` calls | `/api/admin/tags`, `/api/admin/tags/[id]` | Admin tag CRUD |
 | Admin article management | `frontend/src/app/admin/page.tsx` | direct `fetch()` calls | `/api/admin/articles`, `/api/admin/articles/[id]`, `/api/admin/articles/options`, `/api/admin/article-categories`, `/api/admin/article-categories/[id]` | Admin article and article-category CRUD |
 | Admin menus | `frontend/src/app/admin/page.tsx` | direct `fetch()` calls | `/api/admin/menus`, `/api/admin/menus/[id]` | Admin menu editing |
@@ -236,8 +236,10 @@ These are the Next.js routes that exist mainly to hide Django behind same-origin
 - `frontend/src/app/api/admin/content/route.ts` -> CMS content storage
 - `frontend/src/app/api/admin/products/route.ts` and `frontend/src/app/api/admin/products/[id]/route.ts` -> `/api/shop/admin-products/`
 - `frontend/src/app/api/admin/products/options/route.ts` -> `/api/shop/admin-products/options/`
-- `frontend/src/app/api/admin/brands/route.ts` and `frontend/src/app/api/admin/brands/[id]/route.ts` -> `/api/shop/admin-brands/`
-- `frontend/src/app/api/admin/categories/route.ts` and `frontend/src/app/api/admin/categories/[id]/route.ts` -> `/api/shop/admin-categories/`
+- `frontend/src/app/api/admin/brands/route.ts` -> `GET /api/shop/admin-brands/`, `POST /api/shop/admin-brands/create/`
+- `frontend/src/app/api/admin/brands/[id]/route.ts` -> `GET /api/shop/admin-brands/<id>/`, `PUT/PATCH /api/shop/admin-brands/<id>/update/`, `DELETE /api/shop/admin-brands/<id>/delete/`
+- `frontend/src/app/api/admin/categories/route.ts` -> `GET /api/shop/admin-categories/`, `POST /api/shop/admin-categories/create/`
+- `frontend/src/app/api/admin/categories/[id]/route.ts` -> `GET /api/shop/admin-categories/<id>/`, `PUT/PATCH /api/shop/admin-categories/<id>/update/`, `DELETE /api/shop/admin-categories/<id>/delete/`
 - `frontend/src/app/api/admin/tags/route.ts` and `frontend/src/app/api/admin/tags/[id]/route.ts` -> `/api/shop/admin-tags/`
 - `frontend/src/app/api/admin/articles/route.ts` and `frontend/src/app/api/admin/articles/[id]/route.ts` -> `/api/articles/admin-articles/`
 - `frontend/src/app/api/admin/article-categories/route.ts` and `frontend/src/app/api/admin/article-categories/[id]/route.ts` -> `/api/articles/admin-article-categories/`

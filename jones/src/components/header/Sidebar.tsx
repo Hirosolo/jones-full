@@ -6,10 +6,11 @@ import { IoIosArrowForward, IoIosArrowBack } from "react-icons/io";
 import { BiCaretDown } from "react-icons/bi";
 
 import Form from "@Components/common/Form";
-import { buildCategoriesList, brandsData } from "./MenuLists";
+import { buildCategoriesList } from "./MenuLists";
 import { getPathString } from "src/utils";
 import { getCategories } from "@Lib/api/catalog";
 import type { BackendCategory } from "src/types/backend";
+import useBrandGroups from "@Hooks/useBrandGroups";
 
 import { useDialog, DialogType, useCurrencyFormatter } from "@Contexts/UIContext";
 import { useAuthState } from "@Contexts/AuthContext";
@@ -28,6 +29,7 @@ export default function Sidebar() {
   // Brands-specific two-level navigation
   const [brandsLevel, setBrandsLevel] = useState<BrandsLevel>(null);
   const [categories, setCategories] = useState<BackendCategory[]>([]);
+  const brandGroups = useBrandGroups();
 
   const { currentDialog, setDialog } = useDialog();
 
@@ -100,7 +102,7 @@ export default function Sidebar() {
           <li className="sidebar__links-item sidebar__links-group-label">
             <span>BRANDS</span>
           </li>
-          {Object.entries(brandsData).map(([group, brands]) => {
+          {Object.entries(brandGroups).map(([group, brands]) => {
             const isOpen = expandedGroup === group;
             return (
               <li key={group} className={`sidebar__links-item sidebar__links-accordion${isOpen ? " sidebar__links-accordion--open" : ""}`}>

@@ -9,10 +9,10 @@ import { IoIosArrowForward } from "react-icons/io";
 
 import Logo from "@Components/common/Logo";
 import ToolTip from "@Components/common/ToolTip";
-import { brandsData } from "./MenuLists";
 import { getPathString } from "src/utils";
 import { getCategories } from "@Lib/api/catalog";
 import type { BackendCategory } from "src/types/backend";
+import useBrandGroups from "@Hooks/useBrandGroups";
 
 import useScrollTop from "@Hooks/useScrollTop";
 import { DialogType, useCurrencyFormatter, useDialog } from "@Contexts/UIContext";
@@ -27,6 +27,8 @@ export default function HeaderSection() {
   const [expandedBrandsGroup, setExpandedBrandsGroup] = useState<string | null>(null);
   const [activeBrandsGroup, setActiveBrandsGroup] = useState<string | null>(null);
   const [categories, setCategories] = useState<BackendCategory[]>([]);
+  const brandGroups = useBrandGroups();
+  const brandGroupNames = Object.keys(brandGroups);
   const [pinnedState, setPinnedState] = useState(false);
   const scrollTop = useScrollTop();
   const headerRef = useRef<HTMLElement>(null);
@@ -67,6 +69,14 @@ export default function HeaderSection() {
     };
   }, []);
 
+  useEffect(() => {
+    if (brandGroupNames.length === 0) return;
+
+    if (!activeBrandsGroup || !brandGroups[activeBrandsGroup]) {
+      setActiveBrandsGroup(brandGroupNames[0]);
+    }
+  }, [activeBrandsGroup, brandGroupNames, brandGroups]);
+
   const [hoveredElement, setHoveredElement] = useState<string>("");
 
   const toggleDropdown = (mode: DropdownMode) => {
@@ -75,10 +85,8 @@ export default function HeaderSection() {
     } else {
       setDropdownMode(mode);
       if (mode === "brands") {
-        // Initialize with the first group if none active
-        const groups = Object.keys(brandsData);
-        if (groups.length > 0 && !activeBrandsGroup) {
-          setActiveBrandsGroup(groups[0]);
+        if (brandGroupNames.length > 0 && !activeBrandsGroup) {
+          setActiveBrandsGroup(brandGroupNames[0]);
         }
       }
       setExpandedBrandsGroup(null);
@@ -224,7 +232,7 @@ export default function HeaderSection() {
         {dropdownMode === "brands" && (
           <div className="header__brands-two-pane">
             <div className="header__brands-sidebar">
-              {Object.keys(brandsData).map((group) => (
+              {brandGroupNames.map((group) => (
                 <button
                   key={group}
                   className={`header__brands-sidebar-item${
@@ -240,7 +248,7 @@ export default function HeaderSection() {
             <div className="header__brands-content">
               <div className="header__brands-content-grid">
                 {activeBrandsGroup &&
-                  brandsData[activeBrandsGroup]?.map((brand) => (
+                  brandGroups[activeBrandsGroup]?.map((brand) => (
                     <div key={brand} className="header__brands-content-item">
                       <Link href={`/brand/${getPathString(brand)}`}>
                         <a>{brand}</a>

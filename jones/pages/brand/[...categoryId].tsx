@@ -17,9 +17,9 @@ import ProductsProvider, {
   useProductsState,
 } from "@Contexts/ProductsContext";
 import { getProductsByBrand } from "@Lib/api/products";
-import { brandsData } from "@Components/header/MenuLists";
 import { ProductPlaceholderImg } from "src/constants";
 import { getPathString } from "src/utils";
+import { getResolvedBrandGroups } from "@Lib/api/catalog";
 
 function BrandPage({ categoryId }: { categoryId: string }) {
   const { products } = useProductsState();
@@ -138,9 +138,10 @@ export default function BrandPageWithContext({
 }
 
 export const getStaticPaths: GetStaticPaths = async () => {
+  const brandGroups = await getResolvedBrandGroups();
   const paths = [
-    ...Object.keys(brandsData),
-    ...Object.values(brandsData).flat(),
+    ...Object.keys(brandGroups),
+    ...Object.values(brandGroups).flat(),
   ].map((categoryId) => ({
     params: { categoryId: [getPathString(categoryId)] },
   }));

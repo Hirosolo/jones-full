@@ -3,11 +3,11 @@ import { useRef } from "react";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import { useRouter } from "next/router";
 
-import { brandsData } from "@Components/header/MenuLists";
 import { getPathString } from "src/utils";
+import useBrandGroups from "@Hooks/useBrandGroups";
 
 export default function CollectionSection() {
-  const brandGroups = Object.entries(brandsData);
+  const brandGroups = Object.entries(useBrandGroups());
   const router = useRouter();
   const galleryRef = useRef<HTMLDivElement>(null);
 

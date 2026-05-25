@@ -67,8 +67,10 @@ These routes sit in front of Django to keep the browser same-origin and to centr
 | `/api/admin/content` | `pod_shop_cmscontent` via `frontend/src/lib/contentStorage.ts` |
 | `/api/admin/products` and `/api/admin/products/[id]` | `/api/shop/admin-products/` |
 | `/api/admin/products/options` | `/api/shop/admin-products/options/` |
-| `/api/admin/brands` and `/api/admin/brands/[id]` | `/api/shop/admin-brands/` |
-| `/api/admin/categories` and `/api/admin/categories/[id]` | `/api/shop/admin-categories/` |
+| `/api/admin/brands` | `GET -> /api/shop/admin-brands/`, `POST -> /api/shop/admin-brands/create/` |
+| `/api/admin/brands/[id]` | `GET -> /api/shop/admin-brands/<id>/`, `PUT/PATCH -> /api/shop/admin-brands/<id>/update/`, `DELETE -> /api/shop/admin-brands/<id>/delete/` |
+| `/api/admin/categories` | `GET -> /api/shop/admin-categories/`, `POST -> /api/shop/admin-categories/create/` |
+| `/api/admin/categories/[id]` | `GET -> /api/shop/admin-categories/<id>/`, `PUT/PATCH -> /api/shop/admin-categories/<id>/update/`, `DELETE -> /api/shop/admin-categories/<id>/delete/` |
 | `/api/admin/tags` and `/api/admin/tags/[id]` | `/api/shop/admin-tags/` |
 | `/api/admin/articles` and `/api/admin/articles/[id]` | `/api/articles/admin-articles/` |
 | `/api/admin/article-categories` and `/api/admin/article-categories/[id]` | `/api/articles/admin-article-categories/` |
@@ -110,7 +112,7 @@ Route families:
 - Product detail: `/api/shop/product-detail/`, `/api/shop/product-slug-aliases/`
 - Cart and checkout: `/api/shop/cart-items/`, `/api/shop/add-to-cart/`, `/api/shop/create-order/`
 - Wishlist: `/api/shop/get-wishlist/`, `/api/shop/action-to-wishlist/`
-- Admin CRUD: `/api/shop/admin-products/`, `/api/shop/admin-brands/`, `/api/shop/admin-categories/`, `/api/shop/admin-tags/`
+- Admin CRUD: `/api/shop/admin-products/` + `/api/shop/admin-products/<id>/`, `/api/shop/admin-brands/` + `/api/shop/admin-brands/<id>/`, `/api/shop/admin-categories/` + `/api/shop/admin-categories/<id>/`, `/api/shop/admin-tags/`
 
 ### Legacy shop (`myshop`)
 
