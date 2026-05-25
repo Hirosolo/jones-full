@@ -52,6 +52,8 @@ export interface Product {
   title: string;
   price: number;
   discount: number;
+  priceOrigin?: number;
+  pricePromo?: number;
   shippingCost: number;
   mediaURLs: string[];
   gender: Gender;
@@ -60,6 +62,8 @@ export interface Product {
   salesCount: number;
   color: string;
   sizes: number[];
+  tags?: string[];
+  isAvailable?: boolean;
   year?: number;
   type: Category;
 }

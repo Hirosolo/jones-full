@@ -89,7 +89,14 @@ export interface BackendProduct {
   slug: string;
   code: string;
   desc_short?: string;
+  desc_short_safe?: string;
+  desc_safe?: string;
+  seller_notes_safe?: string;
   fake_price?: string;
+  price_origin?: string;
+  price_promo?: string;
+  stock?: number;
+  is_available?: boolean;
   price: string;
   preview_picture: BackendProductPreviewPicture;
   attributes: BackendProductAttr[];

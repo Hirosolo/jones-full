@@ -26,21 +26,24 @@ const ProductPage: NextPage<ProductPageType> = ({
   const {
     id,
     title,
-    gender,
     price,
     discount,
-    sku,
-    year,
-    color,
     salesCount,
-    type,
     ratings,
+    categoryName,
+    brandName,
+    isAvailable,
+    tags,
+    productReviewCount,
+    productAverageRating,
   } = product;
 
   const cartPrice = (price - discount) * 1;
   const percentageOff = discount
     ? `${Math.floor((discount / price) * 100)}% off`
     : "";
+  const productTags = (tags || []).join(", ");
+  const availabilityLabel = isAvailable ? "In stock" : "Out of stock";
 
   return (
     <>
@@ -56,7 +59,6 @@ const ProductPage: NextPage<ProductPageType> = ({
         />
 
         <div className="product-view__cart">
-          <p className="product-view__gender">{gender}</p>
           <h1 className="product-view__name">{title}</h1>
           <div style={{ marginTop: 8 }}>
             {/** Only show admin edit link when backend numeric id is available */}
@@ -71,20 +73,23 @@ const ProductPage: NextPage<ProductPageType> = ({
               </a>
             ) : null}
           </div>
-          <RatingStars count={ratings} />
+          <RatingStars count={productAverageRating ?? ratings} />
 
           <div className="product-view__details">
             <p className="product-view__details-info">
-              <strong>Model No.:</strong> {sku.toUpperCase()}
+              <strong>Brand:</strong> {brandName || "N/A"}
             </p>
             <p className="product-view__details-info">
-              <strong>Release Year:</strong> {year}
+              <strong>Category:</strong> {categoryName || "N/A"}
             </p>
             <p className="product-view__details-info">
-              <strong>Upper:</strong> {type.toLocaleLowerCase()} Cut
+              <strong>Availability:</strong> {availabilityLabel}
             </p>
             <p className="product-view__details-info">
-              <strong>Colorway:</strong> {color}
+              <strong>Reviews:</strong> {productReviewCount ?? 0}
+            </p>
+            <p className="product-view__details-info">
+              <strong>Tags:</strong> {productTags || "N/A"}
             </p>
           </div>
 

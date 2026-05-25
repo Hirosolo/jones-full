@@ -102,7 +102,13 @@ function getAverageRating(bp: BackendProduct): number {
 }
 
 function getDescShort(bp: BackendProduct): string {
-  return (bp as any).desc_short || (bp as any).descShort || "";
+  return (
+    (bp as any).desc_short_safe ||
+    (bp as any).desc_short ||
+    (bp as any).descShort ||
+    (bp as any).desc_safe ||
+    ""
+  );
 }
 
 function dedupeMediaUrls(urls: string[]): string[] {
@@ -117,10 +123,14 @@ function dedupeMediaUrls(urls: string[]): string[] {
 // ─── Product Transformer ───
 
 export function transformProduct(bp: BackendProduct): ProductComponentType {
-  const price = parsePrice(bp.price);
-  const fakePriceValue = getFakePrice(bp);
-  const fakePrice = fakePriceValue ? parsePrice(fakePriceValue) : price;
-  const discount = fakePrice > price ? fakePrice - price : 0;
+  const priceOriginValue =
+    (bp as any).price_origin ?? getFakePrice(bp) ?? bp.price;
+  const pricePromoValue =
+    (bp as any).price_promo ?? bp.price ?? priceOriginValue;
+  const priceOrigin = parsePrice(priceOriginValue);
+  const pricePromo = parsePrice(pricePromoValue);
+  const price = pricePromo || priceOrigin;
+  const discount = priceOrigin > price ? priceOrigin - price : 0;
 
   // Extract images from the preview picture, regardless of payload casing.
   const mediaURLs: string[] = [];
@@ -140,6 +150,7 @@ export function transformProduct(bp: BackendProduct): ProductComponentType {
   const type = parseType(extractAttrValue(attrs, "Type") || extractAttrValue(attrs, "Height"));
   const yearStr = extractAttrValue(attrs, "Year");
   const year = yearStr ? parseInt(yearStr, 10) : new Date().getFullYear();
+  const tagNames = (bp.tags || []).map((tag) => tag.name).filter(Boolean);
 
   return {
     id: String(bp.code || bp.slug),
@@ -148,8 +159,10 @@ export function transformProduct(bp: BackendProduct): ProductComponentType {
     slug: bp.slug,
     categoryName: bp.category?.name || "",
     brandName: bp.brand?.name || "",
-    price: fakePrice,
+    price,
     discount,
+    priceOrigin,
+    pricePromo,
     shippingCost: 0,
     gender,
     sku: bp.code || bp.slug,
@@ -157,6 +170,8 @@ export function transformProduct(bp: BackendProduct): ProductComponentType {
     salesCount: getTimesPurchased(bp),
     color,
     sizes: sizes.length ? sizes : [8, 9, 10, 11],
+    tags: tagNames,
+    isAvailable: (bp as any).is_available,
     year: isNaN(year) ? new Date().getFullYear() : year,
     type,
     ratings: getAverageRating(bp),
@@ -179,7 +194,7 @@ export function transformProductDetail(bp: BackendProductDetail): ProductCompone
     base.mediaURLs = detailMediaURLs;
   }
 
-  base.details = bp.desc || bp.desc_short || "";
+  base.details = bp.desc_safe || bp.desc_short_safe || bp.desc || bp.desc_short || "";
   base.relatedProducts = (bp.related_products || []).map(transformProduct);
   base.crossSell = (bp.cross_sell || []).map(transformProduct);
   base.openGraph = bp.open_graph ?? null;
