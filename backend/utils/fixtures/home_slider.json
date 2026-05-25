@@ -1,0 +1,44 @@
+[
+  {
+    "model": "utils.homeslider",
+    "pk": 1,
+    "fields": {
+      "title": "Discover. Design. Define Your Style",
+      "desc": "Premium trending products with worldwide shipping",
+      "desc_safe": "Premium trending products with worldwide shipping",
+      "image": "/img/hero-slide-1.png",
+      "link": "/c/",
+      "button_text": "SHOP NOW",
+      "order": 1,
+      "status": true
+    }
+  },
+  {
+    "model": "utils.homeslider",
+    "pk": 2,
+    "fields": {
+      "title": "New Arrivals",
+      "desc": "Explore the latest collection of fashion, accessories & home decor",
+      "desc_safe": "Explore the latest collection of fashion, accessories & home decor",
+      "image": "/img/hero-slide-2.png",
+      "link": "/c/",
+      "button_text": "EXPLORE",
+      "order": 2,
+      "status": true
+    }
+  },
+  {
+    "model": "utils.homeslider",
+    "pk": 3,
+    "fields": {
+      "title": "Premium Quality",
+      "desc": "Custom-designed products made just for you",
+      "desc_safe": "Custom-designed products made just for you",
+      "image": "/img/hero-slide-3.png",
+      "link": "/c/",
+      "button_text": "DISCOVER",
+      "order": 3,
+      "status": true
+    }
+  }
+]
