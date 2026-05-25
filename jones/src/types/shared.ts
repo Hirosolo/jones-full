@@ -118,6 +118,7 @@ export interface ProductComponentType extends Product {
   blurDataUrl?: string;
   ratings: number;
   dateAdded: string;
+  shortDetails?: string;
   categoryName?: string;
   brandName?: string;
   openGraph?: {

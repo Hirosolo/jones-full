@@ -34,6 +34,7 @@ const ProductPage: NextPage<ProductPageType> = ({
     brandName,
     isAvailable,
     tags,
+    shortDetails,
     productReviewCount,
     productAverageRating,
   } = product;
@@ -50,13 +51,22 @@ const ProductPage: NextPage<ProductPageType> = ({
       <SEO title={product.title} />
 
       <div className="product-view">
-        <ProductGallery
-          key={`gallery-${id}`}
-          product={product}
-          images={product.mediaURLs}
-          dimensions={imageDimensions}
-          blurDataUrls={blurDataUrls}
-        />
+        <div className="product-view__media">
+          <ProductGallery
+            key={`gallery-${id}`}
+            product={product}
+            images={product.mediaURLs}
+            dimensions={imageDimensions}
+            blurDataUrls={blurDataUrls}
+          />
+
+          {product.details ? (
+            <div
+              className="product-view__description"
+              dangerouslySetInnerHTML={{ __html: product.details }}
+            />
+          ) : null}
+        </div>
 
         <div className="product-view__cart">
           <h1 className="product-view__name">{title}</h1>
@@ -74,6 +84,15 @@ const ProductPage: NextPage<ProductPageType> = ({
             ) : null}
           </div>
           <RatingStars count={productAverageRating ?? ratings} />
+
+          {shortDetails ? (
+            <div
+              className="product-view__short-description"
+              dangerouslySetInnerHTML={{ __html: shortDetails }}
+            />
+          ) : null}
+
+          <ProductDetails product={product} />
 
           <div className="product-view__details">
             <p className="product-view__details-info">
@@ -106,13 +125,11 @@ const ProductPage: NextPage<ProductPageType> = ({
 
           <ShareButton
             title={product.title}
-            description={product.details}
+            description={shortDetails || product.details}
             image={product.mediaURLs[0]}
             hashtags="#jonesstore"
           />
         </div>
-
-        <ProductDetails product={product} />
       </div>
 
       <div className="related-products">

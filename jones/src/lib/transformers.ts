@@ -172,6 +172,7 @@ export function transformProduct(bp: BackendProduct): ProductComponentType {
     sizes: sizes.length ? sizes : [8, 9, 10, 11],
     tags: tagNames,
     isAvailable: (bp as any).is_available,
+    shortDetails: getDescShort(bp),
     year: isNaN(year) ? new Date().getFullYear() : year,
     type,
     ratings: getAverageRating(bp),
@@ -194,7 +195,8 @@ export function transformProductDetail(bp: BackendProductDetail): ProductCompone
     base.mediaURLs = detailMediaURLs;
   }
 
-  base.details = bp.desc_safe || bp.desc_short_safe || bp.desc || bp.desc_short || "";
+  base.details = bp.desc_safe || bp.desc || "";
+  base.shortDetails = bp.desc_short_safe || bp.desc_short || getDescShort(bp);
   base.relatedProducts = (bp.related_products || []).map(transformProduct);
   base.crossSell = (bp.cross_sell || []).map(transformProduct);
   base.openGraph = bp.open_graph ?? null;

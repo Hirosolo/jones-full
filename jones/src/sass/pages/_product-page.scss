@@ -32,6 +32,39 @@
     }
   }
 
+  &__media {
+    grid-column: 1 / 13;
+    display: grid;
+    gap: 1.5rem;
+
+    @include respond-to("medium") {
+      grid-column: 1 / 8;
+    }
+  }
+
+  &__description,
+  &__short-description {
+    font-size: $text-sm;
+    line-height: 1.8;
+
+    :first-child {
+      margin-top: 0;
+    }
+
+    :last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  &__description {
+    color: $c-text-black;
+  }
+
+  &__short-description {
+    color: $c-text-dark;
+    margin: 0.5rem 0 1rem 0;
+  }
+
   &__share-button {
     @extend %round-button;
     width: 4.5rem;
