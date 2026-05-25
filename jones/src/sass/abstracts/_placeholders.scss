@@ -168,18 +168,28 @@
 %product-grid {
   @extend %container;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(1, minmax(0, 1fr));
   justify-content: center;
   padding-bottom: 3rem;
   gap: 1.5rem;
 
+  @include m.respond-to("small") {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   @include m.respond-to("medium") {
     gap: 1.5rem;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 24rem));
   }
 
   @include m.respond-to("x-large") {
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(5, minmax(0, 24rem));
+  }
+
+  > .product {
+    justify-self: center;
+    width: 100%;
+    max-width: 24rem;
   }
 }
 

@@ -58,6 +58,19 @@ const ProductPage: NextPage<ProductPageType> = ({
         <div className="product-view__cart">
           <p className="product-view__gender">{gender}</p>
           <h1 className="product-view__name">{title}</h1>
+          <div style={{ marginTop: 8 }}>
+            {/** Only show admin edit link when backend numeric id is available */}
+            {(product as any).adminId ? (
+              <a
+                href={`/admin/myshop/product/${(product as any).adminId}/change/`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ fontSize: 12 }}
+              >
+                Edit in admin
+              </a>
+            ) : null}
+          </div>
           <RatingStars count={ratings} />
 
           <div className="product-view__details">

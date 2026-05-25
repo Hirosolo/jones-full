@@ -41,15 +41,46 @@
   &__products {
     display: flex;
     flex-flow: row nowrap;
-    justify-content: space-between;
+    justify-content: flex-start;
     margin: 3rem 0 0;
     overflow-y: hidden;
-    overflow-x: hidden;
+    overflow-x: auto;
     scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
     gap: 1rem;
+    padding-bottom: 0.5rem;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    > .product {
+      flex: 0 0 calc((100% - 4rem) / 5);
+      max-width: calc((100% - 4rem) / 5);
+    }
 
     @include respond-to("small") {
       gap: 1.5rem;
+
+      > .product {
+        flex-basis: calc((100% - 1.5rem) / 2);
+        max-width: calc((100% - 1.5rem) / 2);
+      }
+    }
+
+    @include respond-to("medium") {
+      > .product {
+        flex-basis: calc((100% - 3rem) / 4);
+        max-width: calc((100% - 3rem) / 4);
+      }
+    }
+
+    @include respond-to("x-large") {
+      > .product {
+        flex-basis: calc((100% - 6rem) / 5);
+        max-width: calc((100% - 6rem) / 5);
+      }
     }
   }
 

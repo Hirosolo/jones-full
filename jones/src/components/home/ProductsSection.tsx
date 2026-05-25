@@ -15,14 +15,24 @@ export default function ProductsSection({
   url,
   productImageDataUrls,
 }: PropTypes) {
-  const productsComponent = products.map((product) => (
+  const productsComponent = products.map((product, index) => (
     <Product
       {...product}
-      key={product.id}
+      key={`${product.id}-${index}`}
       blurDataUrl={productImageDataUrls[product.id]}
     />
   ));
   const listRef = useRef<HTMLUListElement>(null);
+
+  const scrollProducts = (direction: -1 | 1) => {
+    const list = listRef.current;
+    if (!list) return;
+
+    list.scrollBy({
+      left: direction * list.clientWidth,
+      behavior: "smooth",
+    });
+  };
 
   return (
     <section className="products-section">
@@ -35,24 +45,14 @@ export default function ProductsSection({
           <button
             aria-label="previous product"
             className="products-section__scroll-button"
-            onClick={() =>
-              listRef.current?.scrollBy({
-                left: -listRef.current?.scrollWidth / products.length,
-                behavior: "smooth",
-              })
-            }
+            onClick={() => scrollProducts(-1)}
           >
             <BsFillArrowLeftCircleFill />
           </button>
           <button
             aria-label="next product"
             className="products-section__scroll-button"
-            onClick={() =>
-              listRef.current?.scrollBy({
-                left: listRef.current?.scrollWidth / products.length,
-                behavior: "smooth",
-              })
-            }
+            onClick={() => scrollProducts(1)}
           >
             <BsFillArrowRightCircleFill />
           </button>

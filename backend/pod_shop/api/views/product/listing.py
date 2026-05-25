@@ -1,5 +1,7 @@
 # path: pod_shop/api/views/product/listing.py
 
+import random
+
 from django.db.models import Q
 from django.views.decorators.cache import cache_page
 from django.views.decorators.vary import vary_on_headers
@@ -69,24 +71,29 @@ def best_selling_products_view(request):
     from django.core.cache import cache
     
     # Smart caching - try cache first
-    cache_key = 'bestseller_products_api'
+    cache_key = 'bestseller_products_api_v2'
     cached_data = cache.get(cache_key)
     
     if cached_data is not None:
         return Response(cached_data)
     
     user = request.user
-    # Optimized query with select_related and prefetch_related
-    qs = Product.objects.filter(
-        status='A', 
-        best_seller=True
-    ).select_related(
-        'category', 
-        'brand'
-    ).prefetch_related(
-        'tags',
-        'images'
-    ).order_by('-times_purchased')[:12]
+    base_qs = Product.objects.filter(status='A')
+    featured_qs = base_qs.filter(best_seller=True)
+    source_qs = featured_qs if featured_qs.exists() else base_qs
+
+    # Pull a small database-backed pool, then shuffle for variety.
+    pool = list(
+        source_qs.select_related(
+            'category',
+            'brand',
+        ).prefetch_related(
+            'tags',
+            'images',
+        ).order_by('-times_purchased', '-created_at')[:24]
+    )
+    random.shuffle(pool)
+    qs = pool[:12]
     
     data = ProductSerializer(qs, many=True, context={'user': user, 'request': request}).data
     
@@ -106,21 +113,30 @@ def best_selling_products_view(request):
 @permission_classes([AllowAny])
 def latest_products_view(request):
     """
-    API trả về danh sách 5 sản phẩm mới nhất
+    API trả về 16 sản phẩm active được chọn ngẫu nhiên từ database.
     """
+    from django.core.cache import cache
+    
+    cache_key = 'latest_products_api_v2'
+    cached_data = cache.get(cache_key)
+    if cached_data is not None:
+        return Response(cached_data)
+
     user = request.user
-    # Optimized query with select_related and prefetch_related
-    qs = Product.objects.filter(
-        status='A'
-    ).select_related(
-        'category', 
-        'brand'
-    ).prefetch_related(
-        'tags',
-        'images'
-    ).order_by('-created_at')[:5]
+    pool = list(
+        Product.objects.filter(status='A')
+        .select_related('category', 'brand')
+        .prefetch_related('tags', 'images')
+        .order_by('-created_at')
+    )
+
+    random.shuffle(pool)
+    qs = pool[:16]
     
     data = ProductSerializer(qs, many=True, context={'user': user, 'request': request}).data
+
+    if data:
+        cache.set(cache_key, data, 60 * 10)
     
     return Response(data)
 

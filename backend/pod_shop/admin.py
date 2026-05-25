@@ -538,6 +538,7 @@ class ProductAttrInline(admin.TabularInline):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
+    change_form_template = 'admin_/pod_shop/product/change_form.html'
     list_display = (
         'name', 'code', 'slug', 'fake_price', 'price', 'num_images', 'display_attr', 'times_purchased',
         'category', 'display_tags', 'brand', 'status', 'best_seller', 'is_featured', 'updated_at'

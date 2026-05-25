@@ -259,7 +259,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
         # External URL: skip the thumbnailer, return the same URL for all sizes.
         if img.image_url:
-            url = build_media_url(img.image_url)
+            url = img.image_url
             return {'w200': url, 'w400': url, 'w800': url}
 
         try:
@@ -339,10 +339,14 @@ class ProductPictureSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(serializers.CharField)
     def get_image_url(self, obj: ProductImage):
+        if obj.image_url:
+            return obj.image_url
         return build_media_url(obj.image.url)
 
     @extend_schema_field(serializers.CharField)
     def get_image_thumb_url(self, obj: ProductImage):
+        if obj.image_url:
+            return obj.image_url
         return build_media_url(obj.get_thumb_by_width(width=400))
 
     @extend_schema_field(serializers.CharField)
@@ -458,7 +462,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         og_image = ''
         if img:
             if img.image_url:
-                og_image = img.image_url if img.image_url.startswith(('http://', 'https://')) else build_full_url(build_media_url(img.image_url))
+                og_image = img.image_url
             else:
                 # Use the original image (>=1200 returns the original URL via
                 # get_thumb_by_width). Larger og:image gives Google/social

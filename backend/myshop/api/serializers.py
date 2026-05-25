@@ -298,6 +298,7 @@ class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = (
+            'id',
             'name', 'slug', 'code', 'desc_short_safe', 'desc_safe', 'price_origin', 'preview_picture',
             'price_promo', 'is_available', 'category', 'brand', 'tags', 'url', 'full_url',
             'is_sale', 'sale_percentage', 'times_purchased', 'color_images', 'variants_by_color',
@@ -619,6 +620,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = (
+            'id',
             'name', 'slug', 'code', 'desc_short_safe', 'color_images',
             'desc_safe', 'seller_notes_safe', 'price_origin', 'price_promo',
             'stock', 'is_available', 'category', 'brand', 'tags',

@@ -2,7 +2,7 @@ import type { NextPage, GetStaticProps } from "next";
 import dynamic from "next/dynamic";
 import type { ProductComponentType } from "src/types/shared";
 
-import { getLatestProducts, getBestSellers } from "@Lib/api/products";
+import { getLatestProducts } from "@Lib/api/products";
 
 const CollectionSection = dynamic(
   () => import("@Components/home/CollectionSection")
@@ -39,20 +39,24 @@ const Home: NextPage<HomePropTypes> = ({
 };
 
 export const getStaticProps: GetStaticProps = async () => {
-  let newArrivals: ProductComponentType[] = [];
-  let bestSellers: ProductComponentType[] = [];
+  let products: ProductComponentType[] = [];
 
   try {
-    newArrivals = await getLatestProducts();
+    products = await getLatestProducts();
   } catch (err) {
     console.error("[Home] Failed to fetch latest products:", err);
   }
 
-  try {
-    bestSellers = await getBestSellers();
-  } catch (err) {
-    console.error("[Home] Failed to fetch best sellers:", err);
+  const shuffled = [...products];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
   }
+
+  const selected = shuffled.slice(0, 16);
+  const splitIndex = Math.ceil(selected.length / 2);
+  const newArrivals = selected.slice(0, splitIndex);
+  const bestSellers = selected.slice(splitIndex);
 
   const newArrivalsImgDataUrls: Record<string, string> = {};
   const bestSellersImgDataUrls: Record<string, string> = {};

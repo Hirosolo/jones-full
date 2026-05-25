@@ -24,15 +24,17 @@ import type {
 import { Gender, Category } from "src/types/shared";
 
 import { DJANGO_BASE_URL } from "./config";
+import { ProductPlaceholderImg } from "src/constants";
 
 // ─── Helpers ───
 
 function buildMediaUrl(path: string): string {
   if (!path) return "";
-  if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  // Backend may serve from GCS or local /media/
-  if (path.startsWith("/media/")) return `${DJANGO_BASE_URL}${path}`;
-  return `${DJANGO_BASE_URL}/media/${path}`;
+  if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("//")) {
+    return path;
+  }
+  if (path.startsWith("/")) return `${DJANGO_BASE_URL}${path}`;
+  return `${DJANGO_BASE_URL}/${path}`;
 }
 
 function extractAttrValue(
@@ -83,21 +85,52 @@ function parsePrice(value: string | number): number {
   return isNaN(n) ? 0 : n;
 }
 
+function getPreviewPicture(bp: BackendProduct): BackendProduct["preview_picture"] | undefined {
+  return (bp as any).preview_picture || (bp as any).previewPicture;
+}
+
+function getFakePrice(bp: BackendProduct): string | number | undefined {
+  return (bp as any).fake_price || (bp as any).fakePrice;
+}
+
+function getTimesPurchased(bp: BackendProduct): number {
+  return (bp as any).times_purchased ?? (bp as any).timesPurchased ?? 0;
+}
+
+function getAverageRating(bp: BackendProduct): number {
+  return (bp as any).product_average_rating ?? (bp as any).productAverageRating ?? 0;
+}
+
+function getDescShort(bp: BackendProduct): string {
+  return (bp as any).desc_short || (bp as any).descShort || "";
+}
+
+function dedupeMediaUrls(urls: string[]): string[] {
+  const seen = new Set<string>();
+  return urls.filter((url) => {
+    if (!url || seen.has(url)) return false;
+    seen.add(url);
+    return true;
+  });
+}
+
 // ─── Product Transformer ───
 
 export function transformProduct(bp: BackendProduct): ProductComponentType {
   const price = parsePrice(bp.price);
-  const fakePrice = bp.fake_price ? parsePrice(bp.fake_price) : price;
+  const fakePriceValue = getFakePrice(bp);
+  const fakePrice = fakePriceValue ? parsePrice(fakePriceValue) : price;
   const discount = fakePrice > price ? fakePrice - price : 0;
 
-  // Extract images from preview_picture
+  // Extract images from the preview picture, regardless of payload casing.
   const mediaURLs: string[] = [];
-  if (bp.preview_picture?.w400) {
-    mediaURLs.push(bp.preview_picture.w400);
-  } else if (bp.preview_picture?.w800) {
-    mediaURLs.push(bp.preview_picture.w800);
-  } else if (bp.preview_picture?.w200) {
-    mediaURLs.push(bp.preview_picture.w200);
+  const previewPicture = getPreviewPicture(bp);
+  if (previewPicture?.w400) {
+    mediaURLs.push(buildMediaUrl(previewPicture.w400));
+  } else if (previewPicture?.w800) {
+    mediaURLs.push(buildMediaUrl(previewPicture.w800));
+  } else if (previewPicture?.w200) {
+    mediaURLs.push(buildMediaUrl(previewPicture.w200));
   }
 
   const attrs = bp.attributes || [];
@@ -110,37 +143,42 @@ export function transformProduct(bp: BackendProduct): ProductComponentType {
 
   return {
     id: String(bp.code || bp.slug),
+    adminId: (bp as any).id || null,
     title: bp.name,
     price: fakePrice,
     discount,
     shippingCost: 0,
-    mediaURLs: mediaURLs.length ? mediaURLs : ["/assets/images/placeholder.webp"],
     gender,
     sku: bp.code || bp.slug,
-    details: bp.desc_short || "",
-    salesCount: bp.times_purchased || 0,
+    details: getDescShort(bp),
+    salesCount: getTimesPurchased(bp),
     color,
     sizes: sizes.length ? sizes : [8, 9, 10, 11],
     year: isNaN(year) ? new Date().getFullYear() : year,
     type,
-    ratings: bp.product_average_rating || 0,
+    ratings: getAverageRating(bp),
     dateAdded: new Date().toISOString(),
+    mediaURLs: mediaURLs.length ? mediaURLs : [ProductPlaceholderImg],
   };
 }
 
 export function transformProductDetail(bp: BackendProductDetail): ProductComponentType {
   const base = transformProduct(bp);
 
-  // Override mediaURLs with full gallery images
-  if (bp.images && bp.images.length) {
-    base.mediaURLs = bp.images.map((url) => buildMediaUrl(url));
-  }
-  // Also include thumbnails if available
-  if (bp.thumbnails && bp.thumbnails.length) {
-    base.mediaURLs = bp.thumbnails.map((t) => buildMediaUrl(t.src));
+  const detailImages = (bp.images || []).map((url) => buildMediaUrl(url));
+  const detailThumbnails = (bp.thumbnails || []).map((t) => buildMediaUrl(t.src));
+  const detailMediaURLs = dedupeMediaUrls([
+    ...detailImages,
+    ...detailThumbnails,
+  ]);
+
+  if (detailMediaURLs.length) {
+    base.mediaURLs = detailMediaURLs;
   }
 
   base.details = bp.desc || bp.desc_short || "";
+  // expose numeric backend id for admin linking
+  (base as any).adminId = (bp as any).id || (base as any).adminId || null;
   return base;
 }
 

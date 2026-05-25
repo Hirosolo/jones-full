@@ -1,6 +1,6 @@
 import type { ProductComponentType } from "src/types/shared";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { AiOutlineHeart, AiFillHeart } from "react-icons/ai";
@@ -12,6 +12,12 @@ import { getPathString } from "src/utils";
 import { useAuthState } from "@Contexts/AuthContext";
 import { ProductPlaceholderImg } from "src/constants";
 import { useCurrencyFormatter } from "@Contexts/UIContext";
+
+function isRemoteImageUrl(url: string) {
+  return /^https?:\/\//i.test(url) || url.startsWith("//");
+}
+
+const loggedProductDebugIds = new Set<string>();
 
 export default function Product(props: ProductComponentType) {
   const {
@@ -30,16 +36,32 @@ export default function Product(props: ProductComponentType) {
   const format = useCurrencyFormatter();
   const { addToWishlist, removeFromWishlist, user } = useAuthState();
   const isOnWishlist = !!user.wishlist.items[id];
+  const MAX_IMAGE_SLIDES = Math.min(3, mediaURLs.length);
+  const [imageIndex, setImageIndex] = useState(0);
+  const timer = useRef<ReturnType<typeof setInterval>>();
+  const activeImage = mediaURLs[imageIndex % MAX_IMAGE_SLIDES] || mediaURLs[0];
+  const currentImage = activeImage || ProductPlaceholderImg;
+
+  useEffect(() => {
+    if (loggedProductDebugIds.has(id)) {
+      return;
+    }
+
+    loggedProductDebugIds.add(id);
+    console.log("[Product image debug]", {
+      id,
+      title,
+      mediaURLs,
+      activeImage: currentImage,
+    });
+  }, [id, title, mediaURLs, currentImage]);
+
   const handleWishlistAction = () => {
     if (isOnWishlist) {
       return removeFromWishlist(id);
     }
     addToWishlist(props);
   };
-  const MAX_IMAGE_SLIDES = Math.min(3, mediaURLs.length);
-  const [imageIndex, setImageIndex] = useState(0);
-  const timer = useRef<ReturnType<typeof setInterval>>();
-  const activeImage = mediaURLs[imageIndex % MAX_IMAGE_SLIDES] || mediaURLs[0];
 
   return (
     <li
@@ -60,17 +82,34 @@ export default function Product(props: ProductComponentType) {
         <a>
           <div className="product__wrapper">
             <div className="product__image">
-              <Image
-                src={activeImage}
-                blurDataURL={blurDataUrl || ProductPlaceholderImg}
-                placeholder="blur"
-                layout="fill"
-                sizes={small ? "(max-width: 640px) 45vw, 18rem" : "(max-width: 640px) 90vw, (max-width: 992px) 45vw, (max-width: 1200px) 30vw, 25vw"}
-                className={clsx("product__image-img", "product__image-img--active")}
-                objectFit="contain"
-                quality={70}
-                alt=""
-              />
+              {isRemoteImageUrl(currentImage) ? (
+                <img
+                  src={currentImage}
+                  className={clsx("product__image-img", "product__image-img--active")}
+                  style={{ objectFit: "contain" }}
+                  alt=""
+                  onError={(event) => {
+                    console.log("[Product image error]", {
+                      id,
+                      title,
+                      src: currentImage,
+                    });
+                    event.currentTarget.src = ProductPlaceholderImg;
+                  }}
+                />
+              ) : (
+                <Image
+                  src={currentImage}
+                  blurDataURL={blurDataUrl || ProductPlaceholderImg}
+                  placeholder="blur"
+                  layout="fill"
+                  sizes={small ? "(max-width: 640px) 45vw, 18rem" : "(max-width: 640px) 90vw, (max-width: 992px) 45vw, (max-width: 1200px) 30vw, 25vw"}
+                  className={clsx("product__image-img", "product__image-img--active")}
+                  objectFit="contain"
+                  quality={70}
+                  alt=""
+                />
+              )}
               {discount ? <span className="product__tag">sale</span> : null}
               <div className="product__actions">
                 <span

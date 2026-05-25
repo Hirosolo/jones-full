@@ -385,6 +385,7 @@
                     <tr>
                         <th>Product</th>
                         <th>Code</th>
+                        <th>Actions</th>
                         <th>Price</th>
                         <th>Status</th>
                         <th>Category</th>
@@ -409,7 +410,18 @@
                                     </div>
                                 </div>
                             </td>
-                            <td>{{ product.code }}</td>
+                            <td>
+                                {{ product.code }}
+                            </td>
+                            <td>
+                                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                                    <a class="tab" href="/admin/myshop/product/{{ product.id }}/change/">Edit</a>
+                                    <form method="post" action="/admin/products/{{ product.id }}/delete" onsubmit="return confirm('Delete {{ product.name|escapejs }}? This cannot be undone.');" style="display:inline; margin:0;">
+                                        {% csrf_token %}
+                                        <button class="tab" type="submit" style="border-color: rgba(249, 115, 115, 0.35); color: #ffd6d6;">Delete</button>
+                                    </form>
+                                </div>
+                            </td>
                             <td>
                                 <span class="price-now">${{ product.price }}</span>
                                 {% if product.fakePrice %}
@@ -432,7 +444,7 @@
                         </tr>
                     {% empty %}
                         <tr>
-                            <td colspan="8" class="empty">No products found.</td>
+                            <td colspan="9" class="empty">No products found.</td>
                         </tr>
                     {% endfor %}
                 </tbody>

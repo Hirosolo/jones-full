@@ -252,11 +252,9 @@ def build_media_url(media_path: str):
     if not media_path:
         return ''
     
-    # Nếu đã là URL đầy đủ, chuyển thành relative path
-    if media_path.startswith(('http://', 'https://')):
-        from urllib.parse import urlparse
-        parsed = urlparse(media_path)
-        return parsed.path
+    # Giữ nguyên URL tuyệt đối hoặc data URL để không làm hỏng ảnh external.
+    if media_path.startswith(('http://', 'https://', 'data:', '//')):
+        return media_path
     
     # Đảm bảo bắt đầu bằng /
     if not media_path.startswith('/'):

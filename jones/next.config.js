@@ -1,5 +1,14 @@
 const path = require("path");
 
+const djangoBaseUrl = process.env.NEXT_PUBLIC_DJANGO_BASE_URL || "http://localhost:8000";
+
+let djangoHostname = "localhost";
+try {
+  djangoHostname = new URL(djangoBaseUrl).hostname;
+} catch {
+  djangoHostname = "localhost";
+}
+
 const headerOptions = {
   "Cross-Origin-Embedder-Policy": "require-corp",
   "Cross-Origin-Opener-Policy": "same-origin",
@@ -26,7 +35,7 @@ const nextConfig = {
   swcMinify: true,
   ...(process.env.DOCKER_BUILD === "1" ? { output: "standalone" } : {}),
   images: {
-    domains: ["res.cloudinary.com", "flagcdn.com"],
+    domains: ["res.cloudinary.com", "flagcdn.com", djangoHostname],
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 60 * 60 * 24 * 30,
     deviceSizes: [320, 420, 640, 768, 992, 1200, 1920],

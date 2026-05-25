@@ -268,6 +268,8 @@ def admin_panel_view(request):
     search = (request.GET.get('search') or '').strip()
     status_filter = (request.GET.get('status') or '').strip()
     success_message = 'Product created successfully.' if request.GET.get('created') == '1' else ''
+    if request.GET.get('deleted') == '1':
+        success_message = 'Product deleted successfully.'
 
     products, total_count, error_message = _fetch_admin_products(request, search=search, status_filter=status_filter)
 
@@ -286,6 +288,17 @@ def admin_panel_view(request):
         'error_message': error_message,
         'success_message': success_message,
     })
+
+
+@require_POST
+def admin_product_delete_view(request, pk):
+    product = Product.objects.filter(pk=pk).first()
+    if not product:
+        return redirect('/admin/?error=product-not-found')
+
+    name = product.name
+    product.delete()
+    return redirect('/admin/?deleted=1&name=' + slugify(name))
 
 
 def admin_product_create_view(request):

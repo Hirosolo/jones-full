@@ -3,12 +3,14 @@
 .product {
   $self: &;
 
-  flex: 1 0 100%;
+  width: 100%;
+  height: 100%;
   font-size: $text-sm;
   scroll-snap-align: center;
 
   & > a {
     display: block;
+    height: 100%;
   }
 
   & > a:focus-visible {
@@ -58,23 +60,46 @@
 
   &__wrapper {
     overflow: hidden;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    border: 0.1rem solid #dfdfdf;
+    background: #fff;
   }
 
   &__image {
     position: relative;
-    padding-bottom: 60.5%;
-    border: 0.1rem solid #dfdfdf;
+    height: 20rem;
+    flex: 0 0 20rem;
+    overflow: hidden;
+
+    @include respond-to("small") {
+      height: 22rem;
+      flex-basis: 22rem;
+    }
+
+    @include respond-to("medium") {
+      height: 24rem;
+      flex-basis: 24rem;
+    }
 
     &-img {
       opacity: 0;
       transition: opacity 0.3s ease-out;
-      padding: 0.5rem !important;
       background: #fff;
+      object-fit: cover !important;
+      object-position: center center !important;
 
       &--active {
         opacity: 1;
       }
     }
+  }
+
+  &__image-img,
+  &__image > img {
+    width: 100%;
+    height: 100%;
   }
 
   &__tag {
@@ -153,6 +178,12 @@
   }
 
   &__info {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 1.2rem 0 0;
+
     > * {
       margin: 0.6rem 0;
     }

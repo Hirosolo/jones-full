@@ -1,11 +1,15 @@
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AiOutlineHeart, AiFillHeart } from "react-icons/ai";
 
 import Carousel from "@Components/Carousel";
 import { useAuthState } from "@Contexts/AuthContext";
 import { ProductPlaceholderImg } from "src/constants";
 import { ProductComponentType } from "src/types/shared";
+
+function isRemoteImageUrl(url: string) {
+  return /^https?:\/\//i.test(url) || url.startsWith("//");
+}
 
 export default function ProductGallery({
   product,
@@ -17,9 +21,41 @@ export default function ProductGallery({
   const { addToWishlist, removeFromWishlist, user } = useAuthState();
   const isOnWishlist = !!user.wishlist.items[product.id];
 
+  useEffect(() => {
+    console.log("[ProductGallery debug]", {
+      productId: product.id,
+      title: product.title,
+      images,
+      activeImage,
+      activeImageUrl: images[activeImage],
+    });
+  }, [product.id, product.title, images, activeImage]);
+
   const renderImage = (index: number) => {
     const url = images[index];
     if (!url) return null;
+    const imageSrc = shouldLoadSlide(index) ? url : ProductPlaceholderImg;
+
+    if (isRemoteImageUrl(imageSrc)) {
+      return (
+        <img
+          className="product-gallery__image"
+          key={"image:" + url}
+          src={imageSrc}
+          onClick={() => window.open(url, "_blank")}
+          alt={`${product.title} image ${index + 1}`}
+          style={{ objectFit: "contain" }}
+          onError={(event) => {
+            console.log("[ProductGallery image error]", {
+              productId: product.id,
+              title: product.title,
+              src: imageSrc,
+            });
+            event.currentTarget.src = ProductPlaceholderImg;
+          }}
+        />
+      );
+    }
 
     return (
       <Image
@@ -28,7 +64,7 @@ export default function ProductGallery({
         priority={index === 0}
         loading={index === activeImage ? "eager" : "lazy"}
         sizes="(max-width: 991px) calc((100vw - 3rem) * 0.52), calc((100vw - 5rem) * 0.52)"
-        src={shouldLoadSlide(index) ? url : ProductPlaceholderImg}
+        src={imageSrc}
         onClick={() => window.open(url, "_blank")}
         placeholder="blur"
         blurDataURL={blurDataUrls[url] || ProductPlaceholderImg}
@@ -61,17 +97,35 @@ export default function ProductGallery({
                   aria-label={`Show image ${i + 1} of ${images.length}`}
                   aria-pressed={i === activeImage}
                 >
-                  <Image
-                    src={url}
-                    width={80}
-                    height={60}
-                    sizes="80px"
-                    placeholder="blur"
-                    blurDataURL={blurDataUrls[url] || ProductPlaceholderImg}
-                    style={{ objectFit: "contain", width: "100%", height: "auto" }}
-                    quality={65}
-                    alt={`${product.title} thumbnail ${i + 1}`}
-                  />
+                  {isRemoteImageUrl(url) ? (
+                    <img
+                      src={url}
+                      width={80}
+                      height={60}
+                      style={{ objectFit: "contain", width: "100%", height: "auto" }}
+                      alt={`${product.title} thumbnail ${i + 1}`}
+                      onError={(event) => {
+                        console.log("[ProductGallery thumbnail error]", {
+                          productId: product.id,
+                          title: product.title,
+                          src: url,
+                        });
+                        event.currentTarget.src = ProductPlaceholderImg;
+                      }}
+                    />
+                  ) : (
+                    <Image
+                      src={url}
+                      width={80}
+                      height={60}
+                      sizes="80px"
+                      placeholder="blur"
+                      blurDataURL={blurDataUrls[url] || ProductPlaceholderImg}
+                      style={{ objectFit: "contain", width: "100%", height: "auto" }}
+                      quality={65}
+                      alt={`${product.title} thumbnail ${i + 1}`}
+                    />
+                  )}
                 </button>
               </li>
             ))}

@@ -25,6 +25,7 @@ from utils.api import common
 from utils.admin_panel import (
     admin_panel_view,
     admin_product_create_view,
+    admin_product_delete_view,
     admin_category_inline_create_view,
     admin_brand_inline_create_view,
     admin_tag_inline_create_view,
@@ -51,6 +52,7 @@ urlpatterns = [
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('admin/products/create', admin_product_create_view, name='admin_product_create'),
+    path('admin/products/<int:pk>/delete', admin_product_delete_view, name='admin_product_delete'),
     path('admin/products/create/category/', admin_category_inline_create_view, name='admin_category_inline_create'),
     path('admin/products/create/brand/', admin_brand_inline_create_view, name='admin_brand_inline_create'),
     path('admin/products/create/tag/', admin_tag_inline_create_view, name='admin_tag_inline_create'),
