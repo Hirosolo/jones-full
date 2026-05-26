@@ -229,21 +229,7 @@ export default function Sidebar() {
                     </Link>
                   )}
                 </li>
-                <li className="sidebar__icon-links-item">
-                  <button
-                    aria-label="cart"
-                    onClick={() => setDialog(DialogType.CART)}
-                    className="sidebar__anchor"
-                  >
-                    <BsCart3 />
-                    <span>
-                      Cart
-                      {cartCount
-                        ? ` (${cartCount}) (${format(cartTotal)})`
-                        : ""}
-                    </span>
-                  </button>
-                </li>
+                {/* Cart removed from sidebar */}
               </ul>
             </div>
             <div className="sidebar__lang-currency language-currency">

@@ -121,14 +121,7 @@ export default function Footer() {
             </li>
             <li className="footer__link">
               <Link href="/">
-                <a
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setDialog(DialogType.CART);
-                  }}
-                >
-                  View Cart
-                </a>
+                <a>View Cart</a>
               </Link>
             </li>
             <li className="footer__link">
