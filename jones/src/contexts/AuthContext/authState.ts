@@ -274,74 +274,15 @@ export default function useUser(currentUser: UserType) {
     quantity: number,
     size: number
   ) => {
-    try {
-      updateUser({
-        type: UserActions.START_PROCESSING,
-        payload: null,
-      });
-      updateUser({
-        type: UserActions.ADD_CART_ITEM,
-        payload: {
-          product,
-          productId: product.id,
-          size,
-          quantity,
-              total: (product.price - (product.discount ?? 0)) * quantity,
-        },
-      });
-      const res = await postCartItem(product.id, quantity, size);
-          if (res.error) {
-            throw new Error(
-              Array.isArray(res.message) ? res.message.join(", ") : res.message
-            );
-          }
-      updateUser({
-        type: UserActions.ADD_CART_ITEM,
-        payload: res.data,
-      });
-    } catch (err) {
-      updateUser({
-        type: UserActions.REMOVE_CART_ITEM,
-        payload: product.id,
-      });
-    } finally {
-      updateUser({
-        type: UserActions.STOP_PROCESSING,
-        payload: null,
-      });
-    }
+    return Promise.resolve();
   };
 
   const removeCartItem = async (id: string) => {
-    const r = await deleteCartItem(id);
-    if (!r.error) {
-      updateUser({
-        type: UserActions.REMOVE_CART_ITEM,
-        payload: id,
-      });
-    }
+    return Promise.resolve();
   };
 
   const emptyCart = async () => {
-    let stateSnapshot: string = "";
-    try {
-      stateSnapshot = JSON.stringify(userState.cart);
-      updateUser({
-        type: UserActions.RESET_CART,
-        payload: { cart: initUser.cart },
-      });
-      const res = await emptyUserCart();
-          if (res.error) {
-            throw new Error(
-              Array.isArray(res.message) ? res.message.join(", ") : res.message
-            );
-          }
-    } catch (err) {
-      updateUser({
-        type: UserActions.RESET_CART,
-        payload: { cart: JSON.parse(stateSnapshot) },
-      });
-    }
+    return Promise.resolve();
   };
 
   const useSelector = (callback: (user: UserTypeNormalized) => void) =>

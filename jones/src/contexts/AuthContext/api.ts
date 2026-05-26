@@ -1,10 +1,6 @@
 import type { DefaultResponse } from "src/types/shared";
 
 import {
-  addToCart as apiAddToCart,
-  removeCartItems as apiRemoveCartItems,
-} from "@Lib/api/cart";
-import {
   addToWishlist as apiAddToWishlist,
   removeFromWishlist as apiRemoveFromWishlist,
 } from "@Lib/api/wishlist";
@@ -32,33 +28,22 @@ export async function postCartItem(
   quantity: number,
   size: number
 ): Promise<DefaultResponse> {
-  try {
-    const res = await apiAddToCart(id, quantity);
-    return {
-      success: res.ok,
-      message: res.msg || "Added to cart",
-      data: { productId: id, quantity, size, total: 0 },
-    };
-  } catch (err: any) {
-    return { error: true, message: err?.body?.msg || "Failed to add to cart" };
-  }
+  return {
+    error: true,
+    message: "Cart is disabled on this site.",
+  };
 }
 
 export async function deleteCartItem(id: string): Promise<DefaultResponse> {
-  try {
-    const res = await apiRemoveCartItems([parseInt(id, 10)]);
-    return { success: res.ok, message: res.msg || "Removed from cart" };
-  } catch (err: any) {
-    return { error: true, message: err?.body?.msg || "Failed to remove from cart" };
-  }
+  return {
+    error: true,
+    message: "Cart is disabled on this site.",
+  };
 }
 
 export async function emptyUserCart(): Promise<DefaultResponse> {
-  try {
-    // We don't have a dedicated "clear all" endpoint; would need to fetch then remove all
-    // For now return success — the caller will clear local state
-    return { success: true, message: "Cart cleared" };
-  } catch (err: any) {
-    return { error: true, message: err?.body?.msg || "Failed to clear cart" };
-  }
+  return {
+    error: true,
+    message: "Cart is disabled on this site.",
+  };
 }
