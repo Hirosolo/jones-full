@@ -252,6 +252,145 @@ async function saveBackendContent(content: SiteContent) {
   }
 }
 
+type AdminBrand = {
+  id: number | string
+  name: string
+  slug: string
+  order?: number
+  league?: string
+  numProducts?: number
+}
+
+function buildBrandGroups(brands: AdminBrand[]) {
+  const groups = new Map<string, AdminBrand[]>()
+
+  for (const brand of brands) {
+    const league = (brand.league || '').trim() || 'Other'
+    const items = groups.get(league) || []
+    items.push(brand)
+    groups.set(league, items)
+  }
+
+  const result = Array.from(groups.entries())
+    .map(([name, items], index) => {
+      const sortedItems = [...items].sort((left, right) => {
+        const leftOrder = Number(left.order || 0)
+        const rightOrder = Number(right.order || 0)
+        return leftOrder - rightOrder || left.name.localeCompare(right.name)
+      })
+
+      const orders = sortedItems
+        .map(item => Number(item.order || 0))
+        .filter(order => Number.isFinite(order))
+
+      return {
+        name,
+        order: orders.length > 0 ? Math.min(...orders) : index + 1,
+        items: sortedItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          slug: item.slug,
+          url: `/b/${item.slug}`,
+          order: Number(item.order || 0),
+        })),
+      }
+    })
+    .sort((left, right) => left.order - right.order || left.name.localeCompare(right.name))
+
+  return {
+    groups: result.map((group, index) => ({
+      ...group,
+      order: index + 1,
+    })),
+  }
+}
+
+async function fetchAdminBrands(): Promise<AdminBrand[]> {
+  const response = await fetch(`${DJANGO_BASE_URL}/api/shop/admin-brands/`, {
+    headers: {
+      Accept: 'application/json',
+      'X-Admin-Key': ADMIN_API_KEY,
+    },
+    cache: 'no-store',
+  })
+
+  if (!response.ok) {
+    const bodyText = await response.text().catch(() => '')
+    throw new Error(bodyText || 'Failed to load brands')
+  }
+
+  const data = await response.json().catch(() => ({}))
+  return Array.isArray(data?.items) ? (data.items as AdminBrand[]) : []
+}
+
+async function updateBrandLeague(brandId: number | string, league: string) {
+  const response = await fetch(`${DJANGO_BASE_URL}/api/shop/admin-brands/${brandId}/update/`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Admin-Key': ADMIN_API_KEY,
+    },
+    body: JSON.stringify({ league }),
+  })
+
+  if (!response.ok) {
+    const bodyText = await response.text().catch(() => '')
+    throw new Error(bodyText || `Failed to update brand ${brandId}`)
+  }
+}
+
+async function handleBrandGroupMutation(
+  req: NextApiRequest,
+  res: NextApiResponse,
+  groupName: string,
+  nextGroupName: string,
+) {
+  if (!ADMIN_API_KEY) {
+    return res.status(503).json({ error: 'ADMIN_API_KEY is not configured on the Next.js server' })
+  }
+
+  const currentGroup = decodeURIComponent(groupName).trim()
+  if (!currentGroup || currentGroup.toLowerCase() === 'other') {
+    return res.status(400).json({ error: 'This brand group cannot be modified directly' })
+  }
+
+  const brands = await fetchAdminBrands()
+  const groupBrands = brands.filter(brand => (brand.league || '').trim() === currentGroup)
+
+  if (groupBrands.length === 0) {
+    return res.status(404).json({ error: 'Brand group not found' })
+  }
+
+  if (req.method === 'DELETE') {
+    await Promise.all(groupBrands.map(brand => updateBrandLeague(brand.id, '')))
+    return res.status(200).json({
+      success: true,
+      message: `Brand group "${currentGroup}" deleted successfully`,
+      count: groupBrands.length,
+    })
+  }
+
+  const targetGroup = nextGroupName.trim()
+  if (!targetGroup) {
+    return res.status(400).json({ error: 'New brand group name is required' })
+  }
+
+  if (targetGroup === currentGroup) {
+    return res.status(200).json({
+      success: true,
+      message: `Brand group "${currentGroup}" updated successfully`,
+      count: groupBrands.length,
+    })
+  }
+
+  await Promise.all(groupBrands.map(brand => updateBrandLeague(brand.id, targetGroup)))
+  return res.status(200).json({
+    success: true,
+    message: `Brand group "${currentGroup}" renamed to "${targetGroup}" successfully`,
+    count: groupBrands.length,
+  })
+}
+
 function backendAdminPath(pathSegments: string[], method: string): string | null {
   const [section, id, action] = pathSegments
 
@@ -334,6 +473,10 @@ function backendAdminPath(pathSegments: string[], method: string): string | null
       if (method === 'PATCH' || method === 'POST') return prefix(`shop/cms/hero-slides/${id}/`)
     }
     return prefix('shop/cms/hero-slides/')
+  }
+
+  if (section === 'brand-groups') {
+    return null
   }
 
   return null
@@ -516,6 +659,59 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const message = error instanceof Error ? error.message : 'Hero slide request failed'
       return res.status(500).json({ error: message })
     }
+  }
+
+  if (section === 'brand-groups') {
+    if (!isAuthenticated(req)) {
+      return res.status(401).json({ error: 'Unauthorized. Please log in to the admin panel.' })
+    }
+
+    if (req.method === 'GET') {
+      try {
+        const brands = ADMIN_API_KEY
+          ? await fetchAdminBrands()
+          : await (async () => {
+              const response = await fetch(`${DJANGO_BASE_URL}/api/shop/brands-list/`, { cache: 'no-store' })
+              if (!response.ok) return [] as AdminBrand[]
+              const data = await response.json().catch(() => ({}))
+              return Array.isArray(data?.items)
+                ? (data.items as AdminBrand[])
+                : Array.isArray(data)
+                  ? (data as AdminBrand[])
+                  : []
+            })()
+
+        return res.status(200).json(buildBrandGroups(brands))
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to load brand groups'
+        return res.status(500).json({ error: message })
+      }
+    }
+
+    if (req.method === 'PATCH' || req.method === 'PUT') {
+      try {
+        const body = await parseRequestBody(req)
+        const currentGroup = String(pathSegments[1] || body?.currentGroup || body?.group || body?.league || '').trim()
+        const nextGroup = String(body?.name || body?.newName || body?.nextGroup || body?.to || '').trim()
+        return await handleBrandGroupMutation(req, res, currentGroup, nextGroup)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to update brand group'
+        return res.status(500).json({ error: message })
+      }
+    }
+
+    if (req.method === 'DELETE') {
+      try {
+        const body = await parseRequestBody(req)
+        const currentGroup = String(pathSegments[1] || body?.currentGroup || body?.group || body?.league || '').trim()
+        return await handleBrandGroupMutation(req, res, currentGroup, '')
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to delete brand group'
+        return res.status(500).json({ error: message })
+      }
+    }
+
+    return res.status(405).json({ error: 'Method not allowed' })
   }
 
   if (section === 'upload') {

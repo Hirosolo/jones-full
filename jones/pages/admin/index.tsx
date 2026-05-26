@@ -1909,6 +1909,22 @@ interface BrandItem {
   numProducts: number
 }
 
+interface BrandGroupItem {
+  name: string
+  order: number
+  items: Array<{
+    id: number | string
+    name: string
+    slug: string
+    url: string
+    order: number
+  }>
+}
+
+interface BrandGroupResponse {
+  groups?: BrandGroupItem[]
+}
+
 interface BrandFormData {
   name: string
   league: string
@@ -1924,14 +1940,23 @@ const emptyBrandForm: BrandFormData = {
 
 function BrandManagement({ showToast }: { showToast: (msg: string, type: 'success' | 'error') => void }) {
   const [brands, setBrands] = useState<BrandItem[]>([])
+  const [brandGroups, setBrandGroups] = useState<BrandGroupItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [groupsLoading, setGroupsLoading] = useState(true)
   const [error, setError] = useState('')
+  const [groupsError, setGroupsError] = useState('')
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(null)
 
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<BrandItem | null>(null)
   const [formData, setFormData] = useState<BrandFormData>(emptyBrandForm)
   const [submitting, setSubmitting] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState<number | null>(null)
+  const [showGroupForm, setShowGroupForm] = useState(false)
+  const [editingGroup, setEditingGroup] = useState<string | null>(null)
+  const [groupName, setGroupName] = useState('')
+  const [groupSubmitting, setGroupSubmitting] = useState(false)
+  const [confirmingGroupDelete, setConfirmingGroupDelete] = useState<string | null>(null)
 
   const fetchBrands = useCallback(async () => {
     setLoading(true)
@@ -1948,7 +1973,25 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
     }
   }, [])
 
-  useEffect(() => { fetchBrands() }, [fetchBrands])
+  const fetchBrandGroups = useCallback(async () => {
+    setGroupsLoading(true)
+    setGroupsError('')
+    try {
+      const res = await fetch('/api/admin/brand-groups', { cache: 'no-store' })
+      if (!res.ok) throw new Error('Failed to fetch brand groups')
+      const data: BrandGroupResponse = await res.json()
+      setBrandGroups(Array.isArray(data.groups) ? data.groups : [])
+    } catch (err: any) {
+      setGroupsError(err.message)
+    } finally {
+      setGroupsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchBrands()
+    fetchBrandGroups()
+  }, [fetchBrands, fetchBrandGroups])
 
   // Distinct league names from existing brands — feeds the league combobox.
   const leagueOptions = React.useMemo(() => {
@@ -1966,7 +2009,31 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
     setShowForm(false)
   }
 
+  const resetGroupForm = () => {
+    setEditingGroup(null)
+    setGroupName('')
+    setShowGroupForm(false)
+  }
+
   const openCreate = () => { resetForm(); setShowForm(true) }
+
+  const openCreateInGroup = (groupName: string) => {
+    setEditing(null)
+    setFormData({ ...emptyBrandForm, league: groupName })
+    setShowForm(true)
+    setExpandedGroup(groupName)
+  }
+
+  const openCreateNewGroup = () => {
+    setEditing(null)
+    setFormData({ ...emptyBrandForm, league: '__new__' })
+    setShowForm(true)
+  }
+
+  const openGroupCreate = () => {
+    resetGroupForm()
+    setShowGroupForm(true)
+  }
 
   const openEdit = (b: BrandItem) => {
     setEditing(b)
@@ -1979,6 +2046,21 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
       logo_url: b.logo && !b.logo.includes('placehold') ? b.logo : '',
     })
     setShowForm(true)
+  }
+
+  const openGroupEdit = (name: string) => {
+    setEditingGroup(name)
+    setGroupName(name)
+    setShowGroupForm(true)
+    setExpandedGroup(name)
+  }
+
+  const sortedBrandGroups = React.useMemo(() => {
+    return [...brandGroups].sort((left, right) => left.order - right.order || left.name.localeCompare(right.name))
+  }, [brandGroups])
+
+  const toggleGroup = (name: string) => {
+    setExpandedGroup(prev => prev === name ? null : name)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -2019,6 +2101,42 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
     }
   }
 
+  const handleGroupSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setGroupSubmitting(true)
+    try {
+      const currentGroup = (editingGroup || '').trim()
+      const nextGroup = groupName.trim()
+      if (!currentGroup) {
+        throw new Error('Select a brand group to edit')
+      }
+      if (!nextGroup) {
+        throw new Error('Brand group name is required')
+      }
+
+      const res = await fetch('/api/admin/brand-groups', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentGroup, name: nextGroup }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || data.detail || 'Failed')
+
+      showToast(data.message || 'Brand group updated!', 'success')
+      await Promise.all([fetchBrands(), fetchBrandGroups()])
+      fetch('/api/admin/revalidate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paths: ['/', '/b'], tags: ['cms-content', 'brand-groups'] }),
+      }).catch(() => {})
+      resetGroupForm()
+    } catch (err: any) {
+      showToast(err.message, 'error')
+    } finally {
+      setGroupSubmitting(false)
+    }
+  }
+
   const handleDelete = async (b: BrandItem) => {
     if (confirmingDelete !== b.id) {
       setConfirmingDelete(b.id)
@@ -2042,6 +2160,35 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
     }
   }
 
+  const handleGroupDelete = async (name: string) => {
+    if (confirmingGroupDelete !== name) {
+      setConfirmingGroupDelete(name)
+      setTimeout(() => setConfirmingGroupDelete(prev => prev === name ? null : prev), 5000)
+      return
+    }
+
+    setConfirmingGroupDelete(null)
+    try {
+      const res = await fetch('/api/admin/brand-groups', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentGroup: name }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || data.detail || 'Failed to delete brand group')
+
+      showToast(data.message || 'Brand group deleted', 'success')
+      await Promise.all([fetchBrands(), fetchBrandGroups()])
+      fetch('/api/admin/revalidate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paths: ['/', '/b'], tags: ['cms-content', 'brand-groups'] }),
+      }).catch(() => {})
+    } catch (err: any) {
+      showToast(err.message, 'error')
+    }
+  }
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
@@ -2052,7 +2199,183 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
           </p>
         </div>
         {!showForm && (
-          <button className='admin-btn-primary' onClick={openCreate}>➕ Add Brand</button>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <button className='admin-btn-primary' onClick={openCreate}>➕ Add Brand</button>
+          </div>
+        )}
+      </div>
+
+      {showGroupForm && (
+        <div className='admin-section-card' style={{ marginBottom: '1.5rem', border: '1px solid rgba(96,165,250,0.22)' }}>
+          <form onSubmit={handleGroupSubmit}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
+              <div>
+                <h4 style={{ margin: 0 }}>Edit Brand Group</h4>
+                <p style={{ margin: '0.25rem 0 0', fontSize: '0.8125rem', color: '#71717a' }}>
+                  Renaming a group updates the league for every brand inside it.
+                </p>
+              </div>
+              <button type='button' className='admin-btn-outline' onClick={resetGroupForm} style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>← Back</button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '0.75rem', alignItems: 'end' }}>
+              <div className='admin-field' style={{ margin: 0 }}>
+                <label>Current Group</label>
+                <select value={editingGroup || ''} onChange={e => setEditingGroup(e.target.value)} required>
+                  <option value='' disabled>Choose a group</option>
+                  {sortedBrandGroups.map(group => (
+                    <option key={group.name} value={group.name}>{group.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className='admin-field' style={{ margin: 0 }}>
+                <label>New Group Name</label>
+                <input
+                  value={groupName}
+                  onChange={e => setGroupName(e.target.value)}
+                  placeholder='Enter group name'
+                  required
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button type='submit' className='admin-btn-primary' disabled={groupSubmitting || !editingGroup || !groupName.trim()}>
+                  {groupSubmitting ? '⏳ Saving...' : '💾 Save Group'}
+                </button>
+                <button type='button' className='admin-btn-outline' onClick={resetGroupForm}>Cancel</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      )}
+
+      <div className='admin-section-card' style={{ marginBottom: '1.5rem', border: '1px solid rgba(96,165,250,0.22)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+          <div>
+            <h4 style={{ margin: 0 }}>Brand Groups</h4>
+            <p style={{ margin: '0.25rem 0 0', fontSize: '0.8125rem', color: '#71717a' }}>
+              Expand a group to see its brands. Use the buttons on each row to add, edit, or delete.
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <button className='admin-btn-primary' onClick={openCreateNewGroup} style={{ whiteSpace: 'nowrap' }}>➕ Create Group</button>
+            <button className='admin-btn-outline' onClick={() => fetchBrandGroups()} style={{ whiteSpace: 'nowrap' }}>🔄 Refresh Groups</button>
+          </div>
+        </div>
+
+        {groupsLoading ? (
+          <div style={{ textAlign: 'center', padding: '1rem', color: '#71717a' }}>Loading brand groups...</div>
+        ) : groupsError ? (
+          <div style={{ textAlign: 'center', padding: '1rem' }}>
+            <p style={{ color: '#ef4444', marginBottom: '0.5rem' }}>⚠️ {groupsError}</p>
+            <button className='admin-btn-outline' onClick={fetchBrandGroups}>🔄 Retry</button>
+          </div>
+        ) : sortedBrandGroups.length === 0 ? (
+          <div style={{ color: '#71717a', fontSize: '0.875rem' }}>No brand groups found yet. Create a new group by adding a brand with a new league.</div>
+        ) : (
+          <div style={{ display: 'grid', gap: '0.75rem' }}>
+            {sortedBrandGroups.map(group => {
+              const isExpanded = expandedGroup === group.name
+              return (
+                <div key={group.name} style={{ borderRadius: '0.875rem', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(24,24,27,0.88)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', padding: '0.95rem 1rem' }}>
+                    <button
+                      type='button'
+                      onClick={() => toggleGroup(group.name)}
+                      style={{ flex: 1, minWidth: 0, textAlign: 'left', background: 'transparent', color: 'inherit', border: '0', cursor: 'pointer', padding: 0 }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <strong style={{ fontSize: '0.98rem' }}>{group.name}</strong>
+                        <span style={{ color: '#60a5fa', background: '#1e3a5f', padding: '0.125rem 0.5rem', borderRadius: '999px', fontSize: '0.75rem' }}>
+                          {group.items.length} brand{group.items.length !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      <div style={{ marginTop: '0.35rem', color: '#a1a1aa', fontSize: '0.8125rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {group.items.map(item => item.name).join(', ')}
+                      </div>
+                    </button>
+                    <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+                      <button className='admin-btn-outline' onClick={() => openGroupEdit(group.name)} style={{ padding: '0.25rem 0.625rem', fontSize: '0.75rem' }}>✏️ Edit</button>
+                      <button
+                        className='admin-btn-remove'
+                        onClick={() => handleGroupDelete(group.name)}
+                        style={{ padding: '0.25rem 0.625rem', fontSize: '0.75rem', minWidth: confirmingGroupDelete === group.name ? 70 : undefined, background: confirmingGroupDelete === group.name ? '#dc2626' : undefined }}
+                        title='Delete brand group by clearing the league on its brands'
+                      >
+                        {confirmingGroupDelete === group.name ? '⚠️ Confirm?' : '🗑️'}
+                      </button>
+                      <span style={{ color: '#71717a', fontSize: '0.875rem', alignSelf: 'center' }}>{isExpanded ? 'Collapse' : 'Expand'}</span>
+                    </div>
+                  </div>
+
+                  {isExpanded && (
+                    <div style={{ padding: '0 1rem 1rem' }}>
+                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+                        <button className='admin-btn-primary' onClick={() => openCreateInGroup(group.name)} style={{ padding: '0.25rem 0.625rem', fontSize: '0.75rem' }}>➕ Add Brand</button>
+                      </div>
+
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+                          <thead>
+                            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                              <th style={{ textAlign: 'left', padding: '0.65rem 0.5rem', color: '#a1a1aa', fontWeight: 500, fontSize: '0.72rem', textTransform: 'uppercase' }}>Logo</th>
+                              <th style={{ textAlign: 'left', padding: '0.65rem 0.5rem', color: '#a1a1aa', fontWeight: 500, fontSize: '0.72rem', textTransform: 'uppercase' }}>Name</th>
+                              <th style={{ textAlign: 'left', padding: '0.65rem 0.5rem', color: '#a1a1aa', fontWeight: 500, fontSize: '0.72rem', textTransform: 'uppercase' }}>Slug</th>
+                              <th style={{ textAlign: 'center', padding: '0.65rem 0.5rem', color: '#a1a1aa', fontWeight: 500, fontSize: '0.72rem', textTransform: 'uppercase' }}>Order</th>
+                              <th style={{ textAlign: 'center', padding: '0.65rem 0.5rem', color: '#a1a1aa', fontWeight: 500, fontSize: '0.72rem', textTransform: 'uppercase' }}>Products</th>
+                              <th style={{ textAlign: 'right', padding: '0.65rem 0.5rem', color: '#a1a1aa', fontWeight: 500, fontSize: '0.72rem', textTransform: 'uppercase' }}>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {group.items.map(item => {
+                              const brand = brands.find(candidate => candidate.id === item.id)
+                              const fallbackBrand: BrandItem = {
+                                id: Number(item.id),
+                                name: item.name,
+                                slug: item.slug,
+                                logo: null,
+                                order: item.order,
+                                league: group.name,
+                                numProducts: 0,
+                              }
+                              const currentBrand = brand || fallbackBrand
+
+                              return (
+                                <tr key={item.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                  <td style={{ padding: '0.625rem 0.5rem' }}>
+                                    <div style={{ width: 36, height: 36, borderRadius: '0.375rem', overflow: 'hidden', background: '#27272a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                      {currentBrand.logo && !currentBrand.logo.includes('placehold') ? (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img src={currentBrand.logo} alt={currentBrand.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                      ) : (
+                                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#71717a' }}>{currentBrand.name.charAt(0).toUpperCase()}</span>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '0.625rem 0.5rem', fontWeight: 600 }}>{currentBrand.name}</td>
+                                  <td style={{ padding: '0.625rem 0.5rem', color: '#71717a', fontFamily: 'monospace', fontSize: '0.8125rem' }}>{currentBrand.slug}</td>
+                                  <td style={{ padding: '0.625rem 0.5rem', textAlign: 'center' }}>{currentBrand.order}</td>
+                                  <td style={{ padding: '0.625rem 0.5rem', textAlign: 'center' }}>
+                                    <span style={{ background: '#1e3a5f', color: '#60a5fa', padding: '0.125rem 0.5rem', borderRadius: '2rem', fontSize: '0.75rem' }}>{currentBrand.numProducts}</span>
+                                  </td>
+                                  <td style={{ padding: '0.625rem 0.5rem', textAlign: 'right' }}>
+                                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                      <button className='admin-btn-outline' onClick={() => openEdit(currentBrand)} style={{ padding: '0.25rem 0.625rem', fontSize: '0.75rem' }}>✏️ Edit</button>
+                                      <button className='admin-btn-remove' onClick={() => handleDelete(currentBrand)} style={{ padding: '0.25rem 0.625rem', fontSize: '0.75rem', minWidth: confirmingDelete === currentBrand.id ? 70 : undefined, background: confirmingDelete === currentBrand.id ? '#dc2626' : undefined }}>
+                                        {confirmingDelete === currentBrand.id ? '⚠️ Confirm?' : '🗑️'}
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         )}
       </div>
 
@@ -2122,71 +2445,6 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
               <button type='button' className='admin-btn-outline' onClick={resetForm}>Cancel</button>
             </div>
           </form>
-        </div>
-      )}
-
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '2rem', color: '#71717a' }}>
-          <div className='admin-spinner' style={{ margin: '0 auto 0.5rem' }} /> Loading brands...
-        </div>
-      ) : error ? (
-        <div style={{ textAlign: 'center', padding: '2rem' }}>
-          <p style={{ color: '#ef4444', marginBottom: '0.5rem' }}>⚠️ {error}</p>
-          <button className='admin-btn-outline' onClick={fetchBrands}>🔄 Retry</button>
-        </div>
-      ) : brands.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '2rem', color: '#71717a' }}>No brands yet. Click &quot;Add Brand&quot; to create one.</div>
-      ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', color: '#a1a1aa', fontWeight: 500, fontSize: '0.75rem', textTransform: 'uppercase' }}>Logo</th>
-                <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', color: '#a1a1aa', fontWeight: 500, fontSize: '0.75rem', textTransform: 'uppercase' }}>Name</th>
-                <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', color: '#a1a1aa', fontWeight: 500, fontSize: '0.75rem', textTransform: 'uppercase' }}>Group</th>
-                <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', color: '#a1a1aa', fontWeight: 500, fontSize: '0.75rem', textTransform: 'uppercase' }}>Slug</th>
-                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', color: '#a1a1aa', fontWeight: 500, fontSize: '0.75rem', textTransform: 'uppercase' }}>Order</th>
-                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', color: '#a1a1aa', fontWeight: 500, fontSize: '0.75rem', textTransform: 'uppercase' }}>Products</th>
-                <th style={{ textAlign: 'right', padding: '0.75rem 0.5rem', color: '#a1a1aa', fontWeight: 500, fontSize: '0.75rem', textTransform: 'uppercase' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[...brands].sort((a, b) => (a.league || '').localeCompare(b.league || '') || a.name.localeCompare(b.name)).map(b => (
-                <tr key={b.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                  <td style={{ padding: '0.625rem 0.5rem' }}>
-                    <div style={{ width: 40, height: 40, borderRadius: '0.375rem', overflow: 'hidden', background: '#27272a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {b.logo && !b.logo.includes('placehold') ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={b.logo} alt={b.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      ) : (
-                        <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#71717a' }}>{b.name.charAt(0).toUpperCase()}</span>
-                      )}
-                    </div>
-                  </td>
-                  <td style={{ padding: '0.625rem 0.5rem', fontWeight: 600 }}>{b.name}</td>
-                  <td style={{ padding: '0.625rem 0.5rem' }}>
-                    {b.league
-                      ? <span style={{ background: '#1e3a5f', color: '#60a5fa', padding: '0.125rem 0.5rem', borderRadius: '2rem', fontSize: '0.75rem' }}>{b.league}</span>
-                      : <span style={{ color: '#52525b', fontSize: '0.75rem' }}>—</span>}
-                  </td>
-                  <td style={{ padding: '0.625rem 0.5rem', color: '#71717a', fontFamily: 'monospace', fontSize: '0.8125rem' }}>{b.slug}</td>
-                  <td style={{ padding: '0.625rem 0.5rem', textAlign: 'center' }}>{b.order}</td>
-                  <td style={{ padding: '0.625rem 0.5rem', textAlign: 'center' }}>
-                    <span style={{ background: '#1e3a5f', color: '#60a5fa', padding: '0.125rem 0.5rem', borderRadius: '2rem', fontSize: '0.75rem' }}>{b.numProducts}</span>
-                  </td>
-                  <td style={{ padding: '0.625rem 0.5rem', textAlign: 'right' }}>
-                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                      <button className='admin-btn-outline' onClick={() => openEdit(b)}
-                        style={{ padding: '0.25rem 0.625rem', fontSize: '0.75rem' }}>✏️ Edit</button>
-                      <button className='admin-btn-remove' onClick={() => handleDelete(b)}
-                        style={{ padding: '0.25rem 0.625rem', fontSize: '0.75rem', minWidth: confirmingDelete === b.id ? 70 : undefined, background: confirmingDelete === b.id ? '#dc2626' : undefined }}
-                        title={b.numProducts > 0 ? 'Warning: has products assigned' : 'Delete brand'}>{confirmingDelete === b.id ? '⚠️ Confirm?' : '🗑️'}</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
       )}
     </div>
