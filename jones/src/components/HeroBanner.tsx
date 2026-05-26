@@ -115,9 +115,9 @@ export default function HeroBanner() {
               url: String(slide?.link || "/").trim() || "/",
             } as HeroSlide;
           })
-          .filter((slide: HeroSlide | null): slide is HeroSlide => Boolean(slide));
+          .filter((slide: HeroSlide | null): slide is HeroSlide => Boolean(slide)) as HeroSlide[];
 
-        normalized.sort((left, right) => (left.order || 0) - (right.order || 0));
+        normalized.sort((a, b) => (a.order || 0) - (b.order || 0));
         console.log("[HeroBanner] loaded hero slides", normalized.length);
 
         if (!cancelled) {

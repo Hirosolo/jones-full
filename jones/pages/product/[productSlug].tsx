@@ -213,10 +213,10 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
 
   try {
     if (product.relatedProducts?.length) {
-      relatedProducts = product.relatedProducts.filter((p) => p.id !== product.id);
+      relatedProducts = product.relatedProducts.filter((p) => p.id !== product!.id);
     } else {
       const latest = await getLatestProducts();
-      relatedProducts = latest.filter((p) => p.id !== product.id);
+      relatedProducts = latest.filter((p) => p.id !== product!.id);
     }
   } catch (err) {
     console.error("[ProductPage] Failed to fetch related products:", err);

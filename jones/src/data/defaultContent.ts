@@ -13,6 +13,7 @@ export interface HeroSlide {
   buttonText: string
   image: string
   link: string
+  order?: number
 }
 
 export interface SectionBase {

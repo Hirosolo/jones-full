@@ -134,4 +134,5 @@ export interface ProductComponentType extends Product {
   isWishlisted?: boolean;
   relatedProducts?: ProductComponentType[];
   crossSell?: ProductComponentType[];
+  adminId?: number | null;
 }

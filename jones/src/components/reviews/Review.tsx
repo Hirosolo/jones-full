@@ -13,7 +13,7 @@ export default function Review({ user, addedAt, comment, rating }: PropTypes) {
         <div className="review__user-avatar">
           <Image
             className="review__user-avatar-element"
-            src={user.avatarURL ?? UserAvatar}
+            src={user?.avatarURL ?? UserAvatar}
             objectFit={"cover"}
             layout="fill"
             alt=""
@@ -23,7 +23,7 @@ export default function Review({ user, addedAt, comment, rating }: PropTypes) {
         <div className="review__body">
           <div className="review__head">
             <div className="review__user">
-              <span className="review__username">{user.username}</span>
+              <span className="review__username">{user?.username ?? 'Anonymous'}</span>
               <wbr />
               <time
                 className="review__date"
@@ -45,4 +45,4 @@ export default function Review({ user, addedAt, comment, rating }: PropTypes) {
   );
 }
 
-type PropTypes = ReviewType & { user: User };
+type PropTypes = ReviewType & { user?: User };

@@ -732,41 +732,5 @@ async function parseRequestBody(req: NextApiRequest): Promise<any> {
   } catch {
     return {}
   }
-  if (section === 'hero-slides') {
-    if (!isAuthenticated(req)) {
-      return res.status(401).json({ error: 'Unauthorized. Please log in to the admin panel.' })
-    }
 
-    const backendUrl = backendAdminPath(pathSegments, req.method || 'GET')
-    if (!backendUrl) {
-      return res.status(404).json({ error: 'Unsupported admin path' })
-    }
-
-    console.log('[admin hero-slides]', req.method, backendUrl)
-
-    const headers: Record<string, string> = {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      'X-Admin-Key': ADMIN_API_KEY,
-    }
-    const options: RequestInit = { method: req.method, headers }
-
-    if (!['GET', 'HEAD'].includes(req.method || 'GET')) {
-      const body = await parseRequestBody(req)
-      options.body = JSON.stringify(body)
-    }
-
-    try {
-      const response = await fetch(backendUrl, options)
-      const text = await response.text()
-      res.status(response.status)
-      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
-      res.setHeader('Pragma', 'no-cache')
-      res.setHeader('Content-Type', response.headers.get('content-type') || 'application/json')
-      return res.send(text)
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Hero slide request failed'
-      return res.status(500).json({ error: message })
-    }
-  }
 }
