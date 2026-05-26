@@ -1620,6 +1620,24 @@ interface CategoryFormData {
   desc: string
 }
 
+function resolveAdminImageSrc(url: string | null | undefined): string {
+  const value = (url || '').trim()
+  if (!value) return ''
+  if (value.startsWith('/api/media/')) return value
+  if (value.startsWith('/media/')) return `/api/media/${value.slice('/media/'.length)}`
+  if (value.startsWith('http://') || value.startsWith('https://')) {
+    try {
+      const parsed = new URL(value)
+      if (parsed.pathname.startsWith('/media/')) {
+        return `/api/media/${parsed.pathname.slice('/media/'.length)}`
+      }
+    } catch {
+      return value
+    }
+  }
+  return value
+}
+
 function CategoryManagement() {
   const [cats, setCats] = useState<CategoryItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -1672,7 +1690,7 @@ function CategoryManagement() {
   const openEditForm = (cat: CategoryItem) => {
     setEditingCat(cat)
     setFormData({ name: cat.name, order: String(cat.order), desc: cat.desc || '' })
-    setImagePreview(cat.image)
+    setImagePreview(resolveAdminImageSrc(cat.image))
     setImageFile(null)
     setShowForm(true)
   }
@@ -1798,7 +1816,7 @@ function CategoryManagement() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 {imagePreview && (
                   <div style={{ width: 64, height: 64, borderRadius: '0.5rem', overflow: 'hidden', background: '#27272a', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <img src={imagePreview} alt='Image preview' style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={resolveAdminImageSrc(imagePreview)} alt='Image preview' style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
                 )}
                 <input type='file' accept='image/*' onChange={handleImageChange} />
@@ -1851,7 +1869,7 @@ function CategoryManagement() {
                   <td style={{ padding: '0.625rem 0.5rem' }}>
                     <div style={{ width: 40, height: 40, borderRadius: '0.375rem', overflow: 'hidden', background: '#27272a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       {cat.image && !cat.image.includes('placehold') ? (
-                        <img src={cat.image} alt={cat.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={resolveAdminImageSrc(cat.image)} alt={cat.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
                         <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#71717a' }}>{cat.name.charAt(0).toUpperCase()}</span>
                       )}

@@ -467,6 +467,7 @@ class Category(models.Model):
     """
     name = models.CharField(max_length=100, unique=True)
     desc = models.TextField(blank=True, help_text='HTML for SEO')
+    image_url = models.URLField(blank=True, max_length=1000)
     slug = AutoSlugField(populate_from='name', unique=True, editable=True, blank=True, max_length=500)
     image = ThumbnailerImageField(
         blank=True,

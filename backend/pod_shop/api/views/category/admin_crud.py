@@ -4,8 +4,10 @@ Secured by X-Admin-Key header authentication.
 """
 import os
 from functools import wraps
+from urllib.parse import urlparse
 
 from django.conf import settings
+from django.utils.text import slugify
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
@@ -27,11 +29,41 @@ def admin_api_key_required(view_func):
     return wrapper
 
 
-def _serialize(c):
+def _public_url(request, value):
+    value = (value or '').strip()
+    if not value:
+        return ''
+    if value.startswith(('http://', 'https://', 'data:', '//')):
+        parsed = urlparse(value)
+        if parsed.scheme in ('http', 'https') and parsed.path:
+            path = parsed.path
+            if path.startswith('/media/'):
+                return _frontend_media_url(path)
+        return value
+    if not value.startswith('/'):
+        value = '/' + value
+    if value.startswith('/media/'):
+        return _frontend_media_url(value)
+    return request.build_absolute_uri(value)
+
+
+def _frontend_media_url(media_path: str) -> str:
+    media_path = (media_path or '').strip()
+    if not media_path:
+        return ''
+    if media_path.startswith('/media/'):
+        media_path = media_path[len('/media/'):]
+    media_path = media_path.lstrip('/')
+    site_url = getattr(settings, 'SITE_URL', '') or 'http://localhost:3000/'
+    return f"{site_url.rstrip('/')}/api/media/{media_path}"
+
+
+def _serialize(request, c):
     img_url = ''
     try:
-        if c.image:
-            img_url = c.image.url
+        img_url = _public_url(request, c.image_url)
+        if not img_url and c.image:
+            img_url = _public_url(request, c.image.url)
     except Exception:
         img_url = ''
     return {
@@ -51,7 +83,7 @@ def _serialize(c):
 def admin_category_list(request):
     """List all categories with active-product counts."""
     cats = Category.objects.all().order_by('order', 'name')
-    items = [_serialize(c) for c in cats]
+    items = [_serialize(request, c) for c in cats]
     return Response({'total': len(items), 'items': items})
 
 
@@ -65,7 +97,7 @@ def admin_category_detail(request, pk):
     except Category.DoesNotExist:
         return Response({'error': 'Category not found'}, status=status.HTTP_404_NOT_FOUND)
 
-    return Response({'category': _serialize(cat)})
+    return Response({'category': _serialize(request, cat)})
 
 
 @api_view(['POST'])
@@ -85,6 +117,7 @@ def admin_category_create(request):
     cat = Category(
         name=name,
         desc=data.get('desc', '') or '',
+        image_url=_public_url(request, data.get('image_url')),
         order=int(data.get('order', 1) or 1),
     )
 
@@ -93,7 +126,11 @@ def admin_category_create(request):
         cat.image = image
 
     cat.save()
-    payload = _serialize(cat)
+    if image:
+        cat.image_url = _frontend_media_url(cat.image.url)
+        cat.save(update_fields=['image_url'])
+
+    payload = _serialize(request, cat)
     payload['message'] = f'Category "{cat.name}" created successfully'
     return Response(payload, status=status.HTTP_201_CREATED)
 
@@ -120,15 +157,22 @@ def admin_category_update(request, pk):
     if 'desc' in data:
         cat.desc = data['desc'] or ''
 
-    if 'order' in data and data['order'] != '':
-        cat.order = int(data['order'])
+    if 'image_url' in data:
+        cat.image_url = _public_url(request, data.get('image_url'))
 
     image = request.FILES.get('image')
     if image:
         cat.image = image
 
+    if 'order' in data and data['order'] != '':
+        cat.order = int(data['order'])
+
     cat.save()
-    payload = _serialize(cat)
+    if image:
+        cat.image_url = _frontend_media_url(cat.image.url)
+        cat.save(update_fields=['image_url'])
+
+    payload = _serialize(request, cat)
     payload['message'] = f'Category "{cat.name}" updated successfully'
     return Response(payload)
 

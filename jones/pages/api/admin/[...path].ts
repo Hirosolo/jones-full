@@ -4,7 +4,10 @@ import { defaultContent, type SiteContent } from '@Data/defaultContent'
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123'
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY || ''
-const DJANGO_BASE_URL = process.env.NEXT_PUBLIC_DJANGO_BASE_URL || 'https://api.fulfillnext.com'
+const DJANGO_BASE_URL =
+  process.env.DJANGO_BASE_URL ||
+  process.env.NEXT_PUBLIC_DJANGO_BASE_URL ||
+  'http://127.0.0.1:8000'
 const COOKIE_NAME = 'admin_token'
 const MAX_FILE_SIZE = 5 * 1024 * 1024
 

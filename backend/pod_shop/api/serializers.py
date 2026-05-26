@@ -72,7 +72,7 @@ class CategoryListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = (
-            'name', 'slug', 'desc', 'image', 'order',
+            'name', 'slug', 'desc', 'image_url', 'image', 'order',
             'url', 'full_url', 'num_product',
         )
 
@@ -87,9 +87,7 @@ class ProductCategoryListSerializer(serializers.ModelSerializer):
     @extend_schema_field(OpenGraphSerializer)
     def get_open_graph(self, obj: Category):
         default_og_image = safe_static('img/default-og-image.jpg')
-        images = (
-            [obj.image.url] if obj.image else [default_og_image]
-        )
+        images = ([obj.image_url] if obj.image_url else ([obj.image.url] if obj.image else [default_og_image]))
 
         return {
             'title': obj.name,
@@ -101,7 +99,7 @@ class ProductCategoryListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = (
-            'name', 'slug', 'desc', 'image',
+            'name', 'slug', 'desc', 'image_url', 'image',
             'url', 'full_url', 'open_graph',
         )
 
