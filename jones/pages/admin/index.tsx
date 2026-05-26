@@ -12,23 +12,19 @@ import { defaultContent } from '@Data/defaultContent'
 
 // ─── Section config for sidebar ───
 const SECTIONS = [
-  { key: 'seo', label: 'SEO Settings', icon: '🔍' },
-  { key: 'mainMenu', label: 'Main Menu', icon: '📋' },
-  { key: 'hero', label: 'Hero Slider', icon: '🏠' },
-  { key: 'latestProducts', label: 'Best Sellers This Week', icon: '📦' },
-  { key: 'categories', label: 'Categories', icon: '📂' },
-  { key: 'youtube', label: 'YouTube Video', icon: '▶️' },
-  { key: 'bannerCTA', label: 'Banner CTA', icon: '🎯' },
-  { key: 'featuredArticles', label: 'Featured Articles', icon: '📰' },
-  { key: 'bestsellers', label: 'Bestsellers', icon: '🏆' },
-  { key: 'faq', label: 'FAQ Section', icon: '❓' },
-  { key: 'footer', label: 'Footer', icon: '🦶' },
-  { key: 'products', label: 'Products', icon: '🛍️' },
-  { key: 'brands', label: 'Brands', icon: '🏢' },
-  { key: 'tags', label: 'Tags', icon: '🏷️' },
   { key: 'articles', label: 'Blog Articles', icon: '✍️' },
   { key: 'articleCategories', label: 'Blog Categories', icon: '📚' },
-  { key: 'mediaLibrary', label: 'Media Library', icon: '🖼️' },
+  { key: 'bestsellers', label: 'Bestsellers', icon: '🏆' },
+  { key: 'brands', label: 'Brands', icon: '🏢' },
+  { key: 'categories', label: 'Categories', icon: '📂' },
+  { key: 'faq', label: 'FAQ Section', icon: '❓' },
+  { key: 'featuredArticles', label: 'Featured Articles', icon: '📰' },
+  { key: 'footer', label: 'Footer', icon: '🦶' },
+  { key: 'collections', label: 'Shop Collections', icon: '🧵' },
+  { key: 'latestProducts', label: 'Shop New Arrivals', icon: '🆕' },
+  { key: 'products', label: 'Products', icon: '🛍️' },
+  { key: 'seo', label: 'SEO Settings', icon: '🔍' },
+  { key: 'tags', label: 'Tags', icon: '🏷️' },
 ] as const
 
 type SectionKey = (typeof SECTIONS)[number]['key']
@@ -3428,7 +3424,7 @@ export default function AdminPage() {
         </div>
         <nav className='admin-sidebar-nav'>
           {SECTIONS.map(sec => {
-            const isHomeSection = sec.key !== 'seo' && sec.key !== 'footer' && sec.key !== 'mediaLibrary' && sec.key !== 'products' && sec.key !== 'tags' && sec.key !== 'mainMenu' && sec.key !== 'articles' && sec.key !== 'articleCategories'
+            const isHomeSection = sec.key !== 'seo' && sec.key !== 'footer' && sec.key !== 'products' && sec.key !== 'tags' && sec.key !== 'articles' && sec.key !== 'articleCategories'
             const homeKey = sec.key as keyof HomeContent
             const sectionData = isHomeSection ? content.home[homeKey] : null
             const isEnabled = sectionData && 'enabled' in (sectionData as any) ? (sectionData as any).enabled : true
@@ -3520,31 +3516,8 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* Main Menu Section */}
-          {activeSection === 'mainMenu' && (
-            <div className='admin-section-card'>
-              <MainMenuManagement />
-            </div>
-          )}
-
-          {/* Hero Section */}
-          {activeSection === 'hero' && (
-            <div className='admin-section-card'>
-                <h3>Hero Slider</h3>
-                <HeroSliderManagement
-                  enabled={content.home.hero.enabled}
-                  order={content.home.hero.order}
-                  onEnabledChange={value => updateHomeSection('hero', 'enabled', value)}
-                  onOrderChange={value => updateHomeSection('hero', 'order', value)}
-                  onDirty={() => setHasChanges(true)}
-                  onSlidesChange={setHeroSlides}
-                  showToast={showToast}
-                />
-            </div>
-          )}
-
           {/* Simple section editors */}
-          {(['latestProducts', 'featuredArticles', 'bestsellers'] as Array<keyof HomeContent>).map(sectionKey => {
+          {(['collections', 'latestProducts', 'featuredArticles', 'bestsellers'] as Array<keyof HomeContent>).map(sectionKey => {
             if (activeSection !== sectionKey) return null
             const section = content.home[sectionKey] as any
             return (
@@ -3619,120 +3592,6 @@ export default function AdminPage() {
                 <CategoryManagement />
               </div>
             </>
-          )}
-
-          {/* YouTube Section */}
-          {activeSection === 'youtube' && (
-            <div className='admin-section-card'>
-              <h3>YouTube Video</h3>
-              <div className='admin-toggle-row'>
-                <label>Section Enabled</label>
-                <button
-                  className={`admin-toggle ${content.home.youtube.enabled ? 'enabled' : ''}`}
-                  onClick={() => updateHomeSection('youtube', 'enabled', !content.home.youtube.enabled)}
-                />
-              </div>
-              <div className='admin-field'>
-                <label>Display Order</label>
-                <input
-                  type='number'
-                  className='admin-order-input'
-                  value={content.home.youtube.order}
-                  onChange={e => updateHomeSection('youtube', 'order', parseInt(e.target.value) || 1)}
-                />
-              </div>
-              <div className='admin-field'>
-                <label>Title</label>
-                <input value={content.home.youtube.title} onChange={e => updateHomeSection('youtube', 'title', e.target.value)} />
-              </div>
-              <div className='admin-field'>
-                <label>Subtitle</label>
-                <textarea value={content.home.youtube.subtitle} onChange={e => updateHomeSection('youtube', 'subtitle', e.target.value)} rows={2} />
-              </div>
-              <div className='admin-field'>
-                <label>YouTube Video ID (e.g. &quot;6CQZ6fKkROY&quot;)</label>
-                <input value={content.home.youtube.videoId} onChange={e => updateHomeSection('youtube', 'videoId', e.target.value)} />
-              </div>
-              {content.home.youtube.videoId && (
-                <div style={{ marginTop: '1rem', borderRadius: '0.5rem', overflow: 'hidden', aspectRatio: '16/9', maxWidth: '400px' }}>
-                  <iframe
-                    src={`https://www.youtube.com/embed/${content.home.youtube.videoId}`}
-                    title='Preview'
-                    style={{ width: '100%', height: '100%', border: 'none' }}
-                    allowFullScreen
-                  />
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Banner CTA */}
-          {activeSection === 'bannerCTA' && (
-            <div className='admin-section-card'>
-              <h3>Banner CTA</h3>
-              <div className='admin-toggle-row'>
-                <label>Section Enabled</label>
-                <button
-                  className={`admin-toggle ${content.home.bannerCTA.enabled ? 'enabled' : ''}`}
-                  onClick={() => updateHomeSection('bannerCTA', 'enabled', !content.home.bannerCTA.enabled)}
-                />
-              </div>
-              <div className='admin-field'>
-                <label>Display Order</label>
-                <input
-                  type='number'
-                  className='admin-order-input'
-                  value={content.home.bannerCTA.order}
-                  onChange={e => updateHomeSection('bannerCTA', 'order', parseInt(e.target.value) || 1)}
-                />
-              </div>
-              <div className='admin-field'>
-                <label>Title</label>
-                <input value={content.home.bannerCTA.title} onChange={e => updateHomeSection('bannerCTA', 'title', e.target.value)} />
-              </div>
-              <div className='admin-field'>
-                <label>Description</label>
-                <textarea value={content.home.bannerCTA.description} onChange={e => updateHomeSection('bannerCTA', 'description', e.target.value)} rows={3} />
-              </div>
-              <ImageUploader
-                currentUrl={content.home.bannerCTA.backgroundImage}
-                onUpload={url => updateHomeSection('bannerCTA', 'backgroundImage', url)}
-                label='Background Image'
-              />
-              <h3 style={{ marginTop: '1.5rem' }}>Buttons</h3>
-              <div className='admin-field-row'>
-                <div className='admin-field'>
-                  <label>Primary Button Text</label>
-                  <input
-                    value={content.home.bannerCTA.primaryButton.text}
-                    onChange={e => updateHomeSection('bannerCTA', 'primaryButton', { ...content.home.bannerCTA.primaryButton, text: e.target.value })}
-                  />
-                </div>
-                <div className='admin-field'>
-                  <label>Primary Button Link</label>
-                  <input
-                    value={content.home.bannerCTA.primaryButton.link}
-                    onChange={e => updateHomeSection('bannerCTA', 'primaryButton', { ...content.home.bannerCTA.primaryButton, link: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className='admin-field-row'>
-                <div className='admin-field'>
-                  <label>Secondary Button Text</label>
-                  <input
-                    value={content.home.bannerCTA.secondaryButton.text}
-                    onChange={e => updateHomeSection('bannerCTA', 'secondaryButton', { ...content.home.bannerCTA.secondaryButton, text: e.target.value })}
-                  />
-                </div>
-                <div className='admin-field'>
-                  <label>Secondary Button Link</label>
-                  <input
-                    value={content.home.bannerCTA.secondaryButton.link}
-                    onChange={e => updateHomeSection('bannerCTA', 'secondaryButton', { ...content.home.bannerCTA.secondaryButton, link: e.target.value })}
-                  />
-                </div>
-              </div>
-            </div>
           )}
 
           {/* FAQ Section */}
@@ -3911,10 +3770,6 @@ export default function AdminPage() {
             <ArticleCategoryManagement showToast={showToast} />
           )}
 
-          {/* Media Library Section */}
-          {activeSection === 'mediaLibrary' && (
-            <MediaLibrary />
-          )}
         </div>
 
         {/* Status Bar */}
