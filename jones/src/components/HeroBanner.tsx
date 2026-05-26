@@ -21,6 +21,7 @@ type HeroSlide = {
   type: string;
   secondary: { highlighted: string; text: string };
   title: string;
+  buttonText: string;
   imageSrc: {
     width: number;
     height: number;
@@ -101,6 +102,7 @@ export default function HeroBanner() {
             const imagePath = String(slide?.image || "").trim();
             const imageSrc = getImageSource(imagePath);
             const order = Number((slide as any)?.order || 0) || 0;
+            const buttonText = stripHtml(String(slide?.buttonText || '')).trim();
 
             if (!title || !imagePath) {
               return null;
@@ -110,6 +112,7 @@ export default function HeroBanner() {
               order,
               type: stripHtml(String(slide?.type || "")) || title,
               secondary: splitSecondaryText(description),
+              buttonText: buttonText || 'buy yours',
               title,
               imageSrc,
               url: String(slide?.link || "/").trim() || "/",
@@ -248,7 +251,7 @@ export default function HeroBanner() {
                   <div className="banner__action-button">
                     <Link href={activeSlide.url}>
                       <a className="banner__action-button-link">
-                        <span>buy yours</span>
+                        <span>{activeSlide.buttonText || 'buy yours'}</span>
                       </a>
                     </Link>
                   </div>
