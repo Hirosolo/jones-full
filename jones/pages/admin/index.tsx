@@ -1955,6 +1955,7 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
   const [showGroupForm, setShowGroupForm] = useState(false)
   const [editingGroup, setEditingGroup] = useState<string | null>(null)
   const [groupName, setGroupName] = useState('')
+  const [groupFirstBrandName, setGroupFirstBrandName] = useState('')
   const [groupSubmitting, setGroupSubmitting] = useState(false)
   const [confirmingGroupDelete, setConfirmingGroupDelete] = useState<string | null>(null)
 
@@ -2012,6 +2013,7 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
   const resetGroupForm = () => {
     setEditingGroup(null)
     setGroupName('')
+    setGroupFirstBrandName('')
     setShowGroupForm(false)
   }
 
@@ -2025,9 +2027,10 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
   }
 
   const openCreateNewGroup = () => {
-    setEditing(null)
-    setFormData({ ...emptyBrandForm, league: '__new__' })
-    setShowForm(true)
+    setEditingGroup(null)
+    setGroupName('')
+    setGroupFirstBrandName('')
+    setShowGroupForm(true)
   }
 
   const openGroupCreate = () => {
@@ -2051,7 +2054,6 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
   const openGroupEdit = (name: string) => {
     setEditingGroup(name)
     setGroupName(name)
-    setShowGroupForm(true)
     setExpandedGroup(name)
   }
 
@@ -2107,22 +2109,41 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
     try {
       const currentGroup = (editingGroup || '').trim()
       const nextGroup = groupName.trim()
-      if (!currentGroup) {
-        throw new Error('Select a brand group to edit')
-      }
       if (!nextGroup) {
         throw new Error('Brand group name is required')
       }
 
-      const res = await fetch('/api/admin/brand-groups', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentGroup, name: nextGroup }),
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(data.error || data.detail || 'Failed')
+      if (!currentGroup) {
+        const firstBrandName = groupFirstBrandName.trim()
+        if (!firstBrandName) {
+          throw new Error('First brand name is required to create a new group')
+        }
 
-      showToast(data.message || 'Brand group updated!', 'success')
+        const fd = new FormData()
+        fd.append('name', firstBrandName)
+        fd.append('league', nextGroup)
+        fd.append('order', '1')
+
+        const res = await fetch('/api/admin/brands', {
+          method: 'POST',
+          body: fd,
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) throw new Error(data.error || data.detail || 'Failed')
+
+        showToast(data.message || 'Brand group created!', 'success')
+      } else {
+        const res = await fetch('/api/admin/brand-groups', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ currentGroup, name: nextGroup }),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) throw new Error(data.error || data.detail || 'Failed')
+
+        showToast(data.message || 'Brand group updated!', 'success')
+      }
+
       await Promise.all([fetchBrands(), fetchBrandGroups()])
       fetch('/api/admin/revalidate', {
         method: 'POST',
@@ -2191,57 +2212,45 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <div>
-          <h3 style={{ margin: 0 }}>Brand Management</h3>
-          <p style={{ margin: '0.25rem 0 0', fontSize: '0.8125rem', color: '#71717a' }}>
-            {brands.length} brand{brands.length !== 1 ? 's' : ''} total · grouped by league in header menu
-          </p>
-        </div>
-        {!showForm && (
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-            <button className='admin-btn-primary' onClick={openCreate}>➕ Add Brand</button>
-          </div>
-        )}
-      </div>
-
-      {showGroupForm && (
+      {showGroupForm && !editingGroup && (
         <div className='admin-section-card' style={{ marginBottom: '1.5rem', border: '1px solid rgba(96,165,250,0.22)' }}>
           <form onSubmit={handleGroupSubmit}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
               <div>
-                <h4 style={{ margin: 0 }}>Edit Brand Group</h4>
+                <h4 style={{ margin: 0 }}>{editingGroup ? 'Edit Brand Group' : 'Create Brand Group'}</h4>
                 <p style={{ margin: '0.25rem 0 0', fontSize: '0.8125rem', color: '#71717a' }}>
-                  Renaming a group updates the league for every brand inside it.
+                  {editingGroup
+                    ? 'Renaming a group updates the league for every brand inside it.'
+                    : 'Creating a group adds the first brand in that new league.'}
                 </p>
               </div>
               <button type='button' className='admin-btn-outline' onClick={resetGroupForm} style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>← Back</button>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '0.75rem', alignItems: 'end' }}>
-              <div className='admin-field' style={{ margin: 0 }}>
-                <label>Current Group</label>
-                <select value={editingGroup || ''} onChange={e => setEditingGroup(e.target.value)} required>
-                  <option value='' disabled>Choose a group</option>
-                  {sortedBrandGroups.map(group => (
-                    <option key={group.name} value={group.name}>{group.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div className='admin-field' style={{ margin: 0 }}>
-                <label>New Group Name</label>
-                <input
-                  value={groupName}
-                  onChange={e => setGroupName(e.target.value)}
-                  placeholder='Enter group name'
-                  required
-                />
-              </div>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button type='submit' className='admin-btn-primary' disabled={groupSubmitting || !editingGroup || !groupName.trim()}>
-                  {groupSubmitting ? '⏳ Saving...' : '💾 Save Group'}
-                </button>
-                <button type='button' className='admin-btn-outline' onClick={resetGroupForm}>Cancel</button>
-              </div>
+                <div className='admin-field' style={{ margin: 0 }}>
+                  <label>New Group Name</label>
+                  <input
+                    value={groupName}
+                    onChange={e => setGroupName(e.target.value)}
+                    placeholder='Enter new group name'
+                    required
+                  />
+                </div>
+                <div className='admin-field' style={{ margin: 0 }}>
+                  <label>First Brand Name</label>
+                  <input
+                    value={groupFirstBrandName}
+                    onChange={e => setGroupFirstBrandName(e.target.value)}
+                    placeholder='Enter the first brand in this group'
+                    required
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button type='submit' className='admin-btn-primary' disabled={groupSubmitting || !groupName.trim() || !groupFirstBrandName.trim()}>
+                    {groupSubmitting ? '⏳ Saving...' : '➕ Create Group'}
+                  </button>
+                  <button type='button' className='admin-btn-outline' onClick={resetGroupForm}>Cancel</button>
+                </div>
             </div>
           </form>
         </div>
@@ -2251,9 +2260,6 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
           <div>
             <h4 style={{ margin: 0 }}>Brand Groups</h4>
-            <p style={{ margin: '0.25rem 0 0', fontSize: '0.8125rem', color: '#71717a' }}>
-              Expand a group to see its brands. Use the buttons on each row to add, edit, or delete.
-            </p>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             <button className='admin-btn-primary' onClick={openCreateNewGroup} style={{ whiteSpace: 'nowrap' }}>➕ Create Group</button>
@@ -2287,13 +2293,41 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
                         <span style={{ color: '#60a5fa', background: '#1e3a5f', padding: '0.125rem 0.5rem', borderRadius: '999px', fontSize: '0.75rem' }}>
                           {group.items.length} brand{group.items.length !== 1 ? 's' : ''}
                         </span>
+                        {editingGroup === group.name && (
+                          <input
+                            value={groupName}
+                            onClick={e => e.stopPropagation()}
+                            onChange={e => setGroupName(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault()
+                                void handleGroupSubmit(e as any)
+                              }
+                              if (e.key === 'Escape') {
+                                e.preventDefault()
+                                resetGroupForm()
+                              }
+                            }}
+                            placeholder='Enter new group name'
+                            style={{ minWidth: 220, padding: '0.35rem 0.55rem', borderRadius: 8, border: '1px solid rgba(96,165,250,0.4)', background: 'rgba(9,9,11,0.85)', color: 'inherit' }}
+                          />
+                        )}
                       </div>
                       <div style={{ marginTop: '0.35rem', color: '#a1a1aa', fontSize: '0.8125rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {group.items.map(item => item.name).join(', ')}
                       </div>
                     </button>
                     <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
-                      <button className='admin-btn-outline' onClick={() => openGroupEdit(group.name)} style={{ padding: '0.25rem 0.625rem', fontSize: '0.75rem' }}>✏️ Edit</button>
+                      {editingGroup === group.name ? (
+                        <>
+                          <button className='admin-btn-primary' onClick={handleGroupSubmit} style={{ padding: '0.25rem 0.625rem', fontSize: '0.75rem' }} disabled={groupSubmitting || !groupName.trim()}>
+                            {groupSubmitting ? '⏳ Saving...' : '💾 Save'}
+                          </button>
+                          <button className='admin-btn-outline' onClick={resetGroupForm} style={{ padding: '0.25rem 0.625rem', fontSize: '0.75rem' }}>Cancel</button>
+                        </>
+                      ) : (
+                        <button className='admin-btn-outline' onClick={() => openGroupEdit(group.name)} style={{ padding: '0.25rem 0.625rem', fontSize: '0.75rem' }}>✏️ Edit</button>
+                      )}
                       <button
                         className='admin-btn-remove'
                         onClick={() => handleGroupDelete(group.name)}

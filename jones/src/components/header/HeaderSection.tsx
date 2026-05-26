@@ -25,7 +25,7 @@ export default function HeaderSection() {
   const [dropdownMode, setDropdownMode] = useState<DropdownMode>(null);
   const [expandedBrandsGroup, setExpandedBrandsGroup] = useState<string | null>(null);
   const [activeBrandsGroup, setActiveBrandsGroup] = useState<string | null>(null);
-  const brandGroups = useBrandGroups();
+  const { brandGroups, loading: brandGroupsLoading, refreshBrandGroups } = useBrandGroups();
   const [categories, setCategories] = useState<BackendCategory[]>([]);
   const [pinnedState, setPinnedState] = useState(false);
   const scrollTop = useScrollTop();
@@ -88,6 +88,7 @@ export default function HeaderSection() {
     } else {
       setDropdownMode(mode);
       if (mode === "brands") {
+        void refreshBrandGroups();
         // Initialize with the first group if none active
         const groups = Object.keys(brandGroups);
         if (groups.length > 0 && !activeBrandsGroup) {
@@ -222,7 +223,11 @@ export default function HeaderSection() {
         {dropdownMode === "brands" && (
           <div className="header__brands-two-pane">
             <div className="header__brands-sidebar">
-              {Object.keys(brandGroups).map((group) => (
+              {brandGroupsLoading ? (
+                <div className="header__brands-sidebar-item" style={{ opacity: 0.75, cursor: "default" }}>
+                  Loading brands...
+                </div>
+              ) : Object.keys(brandGroups).map((group) => (
                 <button
                   key={group}
                   className={`header__brands-sidebar-item${
@@ -237,14 +242,19 @@ export default function HeaderSection() {
             </div>
             <div className="header__brands-content">
               <div className="header__brands-content-grid">
-                {activeBrandsGroup &&
-                  brandGroups[activeBrandsGroup]?.map((brand) => (
+                {brandGroupsLoading ? (
+                  <div className="header__brands-content-item">Loading database brands...</div>
+                ) : activeBrandsGroup && brandGroups[activeBrandsGroup]?.length ? (
+                  brandGroups[activeBrandsGroup].map((brand) => (
                     <div key={brand} className="header__brands-content-item">
                       <Link href={`/brand/${getPathString(brand)}`}>
                         <a>{brand}</a>
                       </Link>
                     </div>
-                  ))}
+                  ))
+                ) : (
+                  <div className="header__brands-content-item">No brands available.</div>
+                )}
               </div>
             </div>
           </div>

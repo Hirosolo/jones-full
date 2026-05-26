@@ -28,7 +28,7 @@ export default function Sidebar() {
 
   // Brands-specific two-level navigation
   const [brandsLevel, setBrandsLevel] = useState<BrandsLevel>(null);
-  const brandGroups = useBrandGroups();
+  const { brandGroups, loading: brandGroupsLoading, refreshBrandGroups } = useBrandGroups();
   const [categories, setCategories] = useState<BackendCategory[]>([]);
 
   const { currentDialog, setDialog } = useDialog();
@@ -71,6 +71,7 @@ export default function Sidebar() {
   const openBrands = () => {
     setBrandsLevel("groups");
     setSubmenuActive(true);
+    void refreshBrandGroups();
   };
 
   const openBrandGroup = (group: string) => {
@@ -102,7 +103,11 @@ export default function Sidebar() {
           <li className="sidebar__links-item sidebar__links-group-label">
             <span>BRANDS</span>
           </li>
-          {Object.entries(brandGroups).map(([group, brands]) => {
+          {brandGroupsLoading ? (
+            <li className="sidebar__links-item sidebar__links-accordion">
+              <span style={{ display: 'block', padding: '0.5rem 0', color: '#a1a1aa' }}>Loading brands from database...</span>
+            </li>
+          ) : Object.entries(brandGroups).map(([group, brands]) => {
             const isOpen = expandedGroup === group;
             return (
               <li key={group} className={`sidebar__links-item sidebar__links-accordion${isOpen ? " sidebar__links-accordion--open" : ""}`}>
@@ -124,6 +129,11 @@ export default function Sidebar() {
               </li>
             );
           })}
+          {!brandGroupsLoading && Object.keys(brandGroups).length === 0 && (
+            <li className="sidebar__links-item sidebar__links-accordion">
+              <span style={{ display: 'block', padding: '0.5rem 0', color: '#a1a1aa' }}>No brand groups found in the database.</span>
+            </li>
+          )}
         </>
       );
     }

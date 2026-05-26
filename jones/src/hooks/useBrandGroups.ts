@@ -1,31 +1,32 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-import { getDefaultBrandGroups, getResolvedBrandGroups } from "@Lib/api/catalog";
+import { getBrandGroups, normalizeBrandGroups } from "@Lib/api/catalog";
 
 export default function useBrandGroups() {
-  const [brandGroups, setBrandGroups] = useState<Record<string, string[]>>(
-    getDefaultBrandGroups()
-  );
+  const [brandGroups, setBrandGroups] = useState<Record<string, string[]>>({});
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let active = true;
+  const refreshBrandGroups = useCallback(async () => {
+    setLoading(true);
 
-    getResolvedBrandGroups()
-      .then((groups) => {
-        if (active) {
-          setBrandGroups(groups);
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setBrandGroups(getDefaultBrandGroups());
-        }
-      });
-
-    return () => {
-      active = false;
-    };
+    try {
+      const response = await getBrandGroups();
+      const groups = normalizeBrandGroups(response);
+      setBrandGroups(groups);
+    } catch {
+      setBrandGroups({});
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  return brandGroups;
+  useEffect(() => {
+    void refreshBrandGroups();
+  }, [refreshBrandGroups]);
+
+  return {
+    brandGroups,
+    loading,
+    refreshBrandGroups,
+  };
 }
