@@ -50,6 +50,84 @@ DEFAULT_HERO_SLIDES = [
     },
 ]
 
+DEFAULT_FOOTER_CONTENT = {
+    'title': 'Jones',
+    'description': 'Premium sneaker culture, styled for the Jones community.',
+    'copyright': 'Jones LLC. All Rights Reserved',
+    'contact': {
+        'address': '46 Lakeshore St. Knoxville, TN 37918',
+        'phone': '+1 (312) 478 6691',
+        'email': 'support@jones.com',
+        'hours': '10:00 - 18:00, Mon - Sat',
+    },
+    'aboutLinks': [
+        {'label': 'About Us', 'link': '/about', 'target': '_self', 'rel': 'noopener noreferrer', 'visible': True},
+        {'label': 'Delivery Information', 'link': '/delivery-info', 'target': '_self', 'rel': 'noopener noreferrer', 'visible': True},
+        {'label': 'Contact Us', 'link': '/contact', 'target': '_self', 'rel': 'noopener noreferrer', 'visible': True},
+        {'label': 'Returns', 'link': '/returns', 'target': '_self', 'rel': 'noopener noreferrer', 'visible': True},
+        {'label': 'F.A.Q', 'link': '/faq', 'target': '_self', 'rel': 'noopener noreferrer', 'visible': True},
+        {'label': 'Site Map', 'link': '/sitemap.xml', 'target': '_self', 'rel': 'noopener noreferrer', 'visible': True},
+    ],
+    'quickLinks': [
+        {'label': 'Sign In', 'link': '/signin', 'target': '_self', 'rel': 'noopener noreferrer', 'visible': True},
+        {'label': 'View Cart', 'link': '/', 'target': '_self', 'rel': 'noopener noreferrer', 'visible': True},
+        {'label': 'Track My Order', 'link': '/track-order', 'target': '_self', 'rel': 'noopener noreferrer', 'visible': True},
+    ],
+    'newsletter': {
+        'title': 'newsletter',
+        'description': "Sign up to our newsletter and we'll keep you up-to-date with the latest arrivals and special offers.",
+        'disclaimer': 'By signing up you are confirming that you have read, understood and accept our Privacy Policy.',
+    },
+    'socialLinks': [
+        {'platform': 'facebook', 'url': 'https://www.facebook.com/jonesstore/', 'visible': True},
+        {'platform': 'instagram', 'url': 'https://www.instagram.com/jonesstore/', 'visible': True},
+        {'platform': 'youtube', 'url': 'https://www.youtube.com/c/jonesstore', 'visible': True},
+        {'platform': 'twitter', 'url': 'https://twitter.com/jonesstore', 'visible': True},
+        {'platform': 'pinterest', 'url': 'https://www.pinterest.com/jonesstore/', 'visible': True},
+        {'platform': 'github', 'url': 'https://github.com/VektorTech/jones-store', 'visible': True},
+    ],
+    'gutter': {
+        'termsLinks': [
+            {'label': 'Terms', 'link': '/terms', 'target': '_self', 'rel': 'noopener noreferrer', 'visible': True},
+            {'label': 'Privacy', 'link': '/privacy', 'target': '_self', 'rel': 'noopener noreferrer', 'visible': True},
+        ],
+        'copy': 'Jones LLC. All Rights Reserved',
+        'languageLabel': 'English',
+        'currencyLabelPrefix': '$',
+    },
+}
+
+
+def _merge_dict(base, incoming):
+    if not isinstance(base, dict):
+        return incoming if isinstance(incoming, dict) else {}
+    result = dict(base)
+    if not isinstance(incoming, dict):
+        return result
+    for key, value in incoming.items():
+        if isinstance(value, dict) and isinstance(result.get(key), dict):
+            result[key] = _merge_dict(result.get(key), value)
+        else:
+            result[key] = value
+    return result
+
+
+def _ensure_footer_payload(payload):
+    if not isinstance(payload, dict):
+        payload = {}
+
+    existing_footer = payload.get('footer')
+    has_new_shape = isinstance(existing_footer, dict) and all(
+        key in existing_footer for key in ('contact', 'aboutLinks', 'quickLinks', 'newsletter', 'socialLinks', 'gutter')
+    )
+
+    if has_new_shape:
+        payload['footer'] = _merge_dict(DEFAULT_FOOTER_CONTENT, existing_footer)
+        return payload, False
+
+    payload['footer'] = _merge_dict(DEFAULT_FOOTER_CONTENT, {})
+    return payload, True
+
 
 def admin_api_key_required(view_func):
     @wraps(view_func)
@@ -290,6 +368,11 @@ def cms_content_get_view(request):
     if not isinstance(payload, dict):
         payload = {}
 
+    payload, footer_seeded = _ensure_footer_payload(payload)
+    if footer_seeded:
+        obj.payload = payload
+        obj.save(update_fields=['payload', 'updated_at'])
+
     home = payload.get('home') if isinstance(payload.get('home'), dict) else {}
     home = {**home, 'hero': _resolve_home_hero(payload)}
     payload = {**payload, 'home': home}
@@ -307,6 +390,8 @@ def cms_content_set_view(request):
             {'error': 'Expected a JSON object as request body.'},
             status=status.HTTP_400_BAD_REQUEST,
         )
+    payload, _ = _ensure_footer_payload(payload)
+
     obj = CMSContent.get_solo()
     obj.payload = payload
     obj.save()

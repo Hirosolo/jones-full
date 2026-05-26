@@ -4190,20 +4190,12 @@ export default function AdminPage() {
           {/* Footer Section */}
           {activeSection === 'footer' && (
             <div className='admin-section-card'>
-              <h3>Footer Content</h3>
-              <div className='admin-field'>
-                <label>Footer Title</label>
-                <input value={content.footer.title} onChange={e => updateFooter('title', e.target.value)} />
-              </div>
-              <div className='admin-field'>
-                <label>Description</label>
-                <textarea value={content.footer.description} onChange={e => updateFooter('description', e.target.value)} rows={4} />
-              </div>
-              <div className='admin-field'>
-                <label>Copyright Text</label>
-                <input value={content.footer.copyright} onChange={e => updateFooter('copyright', e.target.value)} />
-              </div>
+              <h3>Footer Content (Matches Frontend Footer)</h3>
               <h3 style={{ marginTop: '1.5rem' }}>Contact Info</h3>
+              <div className='admin-field'>
+                <label>Address</label>
+                <input value={(content.footer as any).contact.address} onChange={e => updateFooterContact('address', e.target.value)} />
+              </div>
               <div className='admin-field'>
                 <label>Email</label>
                 <input value={content.footer.contact.email} onChange={e => updateFooterContact('email', e.target.value)} />
@@ -4214,10 +4206,102 @@ export default function AdminPage() {
                   <input value={content.footer.contact.phone} onChange={e => updateFooterContact('phone', e.target.value)} />
                 </div>
                 <div className='admin-field'>
-                  <label>Address</label>
-                  <input value={content.footer.contact.address} onChange={e => updateFooterContact('address', e.target.value)} />
+                  <label>Business Hours</label>
+                  <input value={(content.footer as any).contact.hours || ''} onChange={e => updateFooterContact('hours', e.target.value)} />
                 </div>
               </div>
+
+              <h3 style={{ marginTop: '1.5rem' }}>About Links (Column 2)</h3>
+              {((content.footer as any).aboutLinks || []).map((item: any, i: number) => (
+                <div key={`about-${i}`} className='admin-list-item' style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.8fr auto', gap: '0.75rem', alignItems: 'center', padding: '0.75rem 1rem' }}>
+                  <input
+                    placeholder='Label'
+                    value={item.label || ''}
+                    onChange={e => {
+                      const links = [...((content.footer as any).aboutLinks || [])]
+                      links[i] = { ...links[i], label: e.target.value }
+                      updateFooter('aboutLinks', links)
+                    }}
+                  />
+                  <input
+                    placeholder='Link'
+                    value={item.link || ''}
+                    onChange={e => {
+                      const links = [...((content.footer as any).aboutLinks || [])]
+                      links[i] = { ...links[i], link: e.target.value }
+                      updateFooter('aboutLinks', links)
+                    }}
+                  />
+                  <button
+                    className={`admin-toggle ${item.visible !== false ? 'enabled' : ''}`}
+                    style={{ width: '36px', height: '20px' }}
+                    onClick={() => {
+                      const links = [...((content.footer as any).aboutLinks || [])]
+                      links[i] = { ...links[i], visible: !(links[i].visible !== false) }
+                      updateFooter('aboutLinks', links)
+                    }}
+                  />
+                </div>
+              ))}
+
+              <h3 style={{ marginTop: '1.5rem' }}>Quick Links (Column 3)</h3>
+              {((content.footer as any).quickLinks || []).map((item: any, i: number) => (
+                <div key={`quick-${i}`} className='admin-list-item' style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.8fr auto', gap: '0.75rem', alignItems: 'center', padding: '0.75rem 1rem' }}>
+                  <input
+                    placeholder='Label'
+                    value={item.label || ''}
+                    onChange={e => {
+                      const links = [...((content.footer as any).quickLinks || [])]
+                      links[i] = { ...links[i], label: e.target.value }
+                      updateFooter('quickLinks', links)
+                    }}
+                  />
+                  <input
+                    placeholder='Link'
+                    value={item.link || ''}
+                    onChange={e => {
+                      const links = [...((content.footer as any).quickLinks || [])]
+                      links[i] = { ...links[i], link: e.target.value }
+                      updateFooter('quickLinks', links)
+                    }}
+                  />
+                  <button
+                    className={`admin-toggle ${item.visible !== false ? 'enabled' : ''}`}
+                    style={{ width: '36px', height: '20px' }}
+                    onClick={() => {
+                      const links = [...((content.footer as any).quickLinks || [])]
+                      links[i] = { ...links[i], visible: !(links[i].visible !== false) }
+                      updateFooter('quickLinks', links)
+                    }}
+                  />
+                </div>
+              ))}
+
+              <h3 style={{ marginTop: '1.5rem' }}>Newsletter (Column 4)</h3>
+              <div className='admin-field'>
+                <label>Newsletter Title</label>
+                <input
+                  value={(content.footer as any).newsletter?.title || ''}
+                  onChange={e => updateFooter('newsletter', { ...(content.footer as any).newsletter, title: e.target.value })}
+                />
+              </div>
+              <div className='admin-field'>
+                <label>Newsletter Description</label>
+                <textarea
+                  rows={3}
+                  value={(content.footer as any).newsletter?.description || ''}
+                  onChange={e => updateFooter('newsletter', { ...(content.footer as any).newsletter, description: e.target.value })}
+                />
+              </div>
+              <div className='admin-field'>
+                <label>Newsletter Disclaimer</label>
+                <textarea
+                  rows={2}
+                  value={(content.footer as any).newsletter?.disclaimer || ''}
+                  onChange={e => updateFooter('newsletter', { ...(content.footer as any).newsletter, disclaimer: e.target.value })}
+                />
+              </div>
+
               <h3 style={{ marginTop: '1.5rem' }}>Social Links</h3>
               {content.footer.socialLinks.map((link, i) => (
                 <div key={i} className='admin-list-item' style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem 1rem' }}>
@@ -4242,6 +4326,63 @@ export default function AdminPage() {
                       updateFooter('socialLinks', links)
                     }}
                     title={link.visible ? 'Visible' : 'Hidden'}
+                  />
+                </div>
+              ))}
+
+              <h3 style={{ marginTop: '1.5rem' }}>Bottom Gutter</h3>
+              <div className='admin-field'>
+                <label>Gutter Copy (without year)</label>
+                <input
+                  value={(content.footer as any).gutter?.copy || ''}
+                  onChange={e => updateFooter('gutter', { ...(content.footer as any).gutter, copy: e.target.value })}
+                />
+              </div>
+              <div className='admin-field-row'>
+                <div className='admin-field'>
+                  <label>Language Label</label>
+                  <input
+                    value={(content.footer as any).gutter?.languageLabel || ''}
+                    onChange={e => updateFooter('gutter', { ...(content.footer as any).gutter, languageLabel: e.target.value })}
+                  />
+                </div>
+                <div className='admin-field'>
+                  <label>Currency Prefix</label>
+                  <input
+                    value={(content.footer as any).gutter?.currencyLabelPrefix || ''}
+                    onChange={e => updateFooter('gutter', { ...(content.footer as any).gutter, currencyLabelPrefix: e.target.value })}
+                  />
+                </div>
+              </div>
+              <h3 style={{ marginTop: '1rem' }}>Terms Links</h3>
+              {((content.footer as any).gutter?.termsLinks || []).map((item: any, i: number) => (
+                <div key={`term-${i}`} className='admin-list-item' style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.8fr auto', gap: '0.75rem', alignItems: 'center', padding: '0.75rem 1rem' }}>
+                  <input
+                    placeholder='Label'
+                    value={item.label || ''}
+                    onChange={e => {
+                      const termsLinks = [...(((content.footer as any).gutter?.termsLinks) || [])]
+                      termsLinks[i] = { ...termsLinks[i], label: e.target.value }
+                      updateFooter('gutter', { ...(content.footer as any).gutter, termsLinks })
+                    }}
+                  />
+                  <input
+                    placeholder='Link'
+                    value={item.link || ''}
+                    onChange={e => {
+                      const termsLinks = [...(((content.footer as any).gutter?.termsLinks) || [])]
+                      termsLinks[i] = { ...termsLinks[i], link: e.target.value }
+                      updateFooter('gutter', { ...(content.footer as any).gutter, termsLinks })
+                    }}
+                  />
+                  <button
+                    className={`admin-toggle ${item.visible !== false ? 'enabled' : ''}`}
+                    style={{ width: '36px', height: '20px' }}
+                    onClick={() => {
+                      const termsLinks = [...(((content.footer as any).gutter?.termsLinks) || [])]
+                      termsLinks[i] = { ...termsLinks[i], visible: !(termsLinks[i].visible !== false) }
+                      updateFooter('gutter', { ...(content.footer as any).gutter, termsLinks })
+                    }}
                   />
                 </div>
               ))}

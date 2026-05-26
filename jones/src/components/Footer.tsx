@@ -1,5 +1,6 @@
 import Link from "next/link";
 import NextImage from "next/image";
+import { useEffect, useState } from "react";
 import { BiMap, BiPhone, BiTime } from "react-icons/bi";
 import { HiOutlineMail } from "react-icons/hi";
 import { FaPaperPlane } from "react-icons/fa";
@@ -19,11 +20,76 @@ import {
 import paymentImage from "@Images/payment.png";
 import Form from "./common/Form";
 import { toast } from "react-toastify";
+import { type FooterContent } from "@Data/defaultContent";
+import { FOOTER_SEED } from "@Data/footerSeed";
+
+function normalizeFooter(cmsFooter: any): FooterContent {
+  const fallback = FOOTER_SEED;
+  const footer = cmsFooter && typeof cmsFooter === "object" ? cmsFooter : {};
+
+  return {
+    title: String(footer.title || fallback.title),
+    description: String(footer.description || fallback.description),
+    copyright: String(footer.copyright || fallback.copyright),
+    contact: {
+      address: String(footer.contact?.address || fallback.contact.address),
+      phone: String(footer.contact?.phone || fallback.contact.phone),
+      email: String(footer.contact?.email || fallback.contact.email),
+      hours: String(footer.contact?.hours || fallback.contact.hours),
+    },
+    aboutLinks: Array.isArray(footer.aboutLinks) ? footer.aboutLinks : fallback.aboutLinks,
+    quickLinks: Array.isArray(footer.quickLinks) ? footer.quickLinks : fallback.quickLinks,
+    newsletter: {
+      title: String(footer.newsletter?.title || fallback.newsletter.title),
+      description: String(footer.newsletter?.description || fallback.newsletter.description),
+      disclaimer: String(footer.newsletter?.disclaimer || fallback.newsletter.disclaimer),
+    },
+    socialLinks: Array.isArray(footer.socialLinks) ? footer.socialLinks : fallback.socialLinks,
+    gutter: {
+      termsLinks: Array.isArray(footer.gutter?.termsLinks) ? footer.gutter.termsLinks : fallback.gutter.termsLinks,
+      copy: String(footer.gutter?.copy || fallback.gutter.copy),
+      languageLabel: String(footer.gutter?.languageLabel || fallback.gutter.languageLabel),
+      currencyLabelPrefix: String(footer.gutter?.currencyLabelPrefix || fallback.gutter.currencyLabelPrefix),
+    },
+  };
+}
 
 export default function Footer() {
   const { currency, setCurrency } = useCurrencyState();
   const { currentDialog, setDialog } = useDialog();
   const visible = currentDialog == DialogType.MODAL_LANG_CURRENCY;
+  const [footerContent, setFooterContent] = useState<FooterContent>(FOOTER_SEED);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadFooter() {
+      try {
+        const response = await fetch("/api/shop/cms/site-content/", { cache: "no-store" });
+        const data = await response.json().catch(() => ({}));
+        if (!cancelled) {
+          setFooterContent(normalizeFooter(data?.footer));
+        }
+      } catch {
+        if (!cancelled) {
+          setFooterContent(FOOTER_SEED);
+        }
+      }
+    }
+
+    loadFooter();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const aboutLinks = footerContent.aboutLinks.filter(link => link?.visible !== false);
+  const quickLinks = footerContent.quickLinks.filter(link => link?.visible !== false);
+  const termsLinks = footerContent.gutter.termsLinks.filter(link => link?.visible !== false);
+  const emailHref = `mailto:${footerContent.contact.email}?subject=I%20Need%20Support`;
+  const phoneHref = `tel:${footerContent.contact.phone.replace(/[^\d+]/g, "")}`;
+  const newsletterDisclaimer = footerContent.newsletter.disclaimer;
+  const privacyLink = footerContent.gutter.termsLinks.find(link => link.label.toLowerCase() === "privacy")?.link || "/privacy";
 
   return (
     <footer className="footer">
@@ -37,106 +103,69 @@ export default function Footer() {
             <p className="footer__contact">
               <BiMap className="footer__contact-icon" />
               <span className="footer__contact-info">
-                46 Lakeshore St. Knoxville,
-                <br />
-                TN 37918
+                {footerContent.contact.address.split(",").map((part, idx) => (
+                  <span key={idx}>
+                    {idx > 0 ? <><br />{part.trim()}</> : part.trim()}
+                  </span>
+                ))}
               </span>
             </p>
             <p className="footer__contact">
               <BiPhone className="footer__contact-icon" />
               <span className="footer__contact-info">
-                <a className="footer__contact-link" href="tel:13124786691">
-                  +1 (312) 478 6691
+                <a className="footer__contact-link" href={phoneHref}>
+                  {footerContent.contact.phone}
                 </a>
               </span>
             </p>
             <p className="footer__contact">
               <HiOutlineMail className="footer__contact-icon" />
               <span className="footer__contact-info">
-                <a
-                  className="footer__contact-link"
-                  href="mailto:support@jones.com?subject=I%20Need%20Support"
-                >
-                  support@
-                  <wbr />
-                  jones.com
-                </a>
+                <a className="footer__contact-link" href={emailHref}>{footerContent.contact.email}</a>
               </span>
             </p>
             <p className="footer__contact">
               <BiTime className="footer__contact-icon" />
               <span className="footer__contact-info">
-                10:00 &mdash; 18:00, Mon &mdash; Sat
+                {footerContent.contact.hours}
               </span>
             </p>
             <hr className="footer__hr" />
             <p className="footer__sub-heading">Connect With Us</p>
             <div className="footer__social-buttons">
-              <SocialIcons size="md" />
+              <SocialIcons size="md" links={footerContent.socialLinks} />
             </div>
           </address>
         </div>
         <div className="footer__col">
           <h3 className="footer__heading">about</h3>
           <ul>
-            <li className="footer__link">
-              <Link href="/about">
-                <a>About Us</a>
-              </Link>
-            </li>
-            <li className="footer__link">
-              <Link href="/delivery-info">
-                <a>Delivery Information</a>
-              </Link>
-            </li>
-            <li className="footer__link">
-              <Link href="/contact">
-                <a>Contact Us</a>
-              </Link>
-            </li>
-            <li className="footer__link">
-              <Link href="/returns">
-                <a>Returns</a>
-              </Link>
-            </li>
-            <li className="footer__link">
-              <Link href="/faq">
-                <a>F.A.Q</a>
-              </Link>
-            </li>
-            <li className="footer__link">
-              <Link href="/sitemap.xml">
-                <a>Site Map</a>
-              </Link>
-            </li>
+            {aboutLinks.map((item, index) => (
+              <li className="footer__link" key={`about-${index}`}>
+                <Link href={item.link || "/"}>
+                  <a target={item.target || "_self"} rel={item.rel || "noopener noreferrer"}>{item.label}</a>
+                </Link>
+              </li>
+            ))}
           </ul>
         </div>
         <div className="footer__col">
           <h3 className="footer__heading">quick links</h3>
           <ul>
-            <li className="footer__link">
-              <Link href="/signin">
-                <a>Sign In</a>
-              </Link>
-            </li>
-            <li className="footer__link">
-              <Link href="/">
-                <a>View Cart</a>
-              </Link>
-            </li>
-            <li className="footer__link">
-              <Link href="/track-order">
-                <a>Track My Order</a>
-              </Link>
-            </li>
+            {quickLinks.map((item, index) => (
+              <li className="footer__link" key={`quick-${index}`}>
+                <Link href={item.link || "/"}>
+                  <a target={item.target || "_self"} rel={item.rel || "noopener noreferrer"}>{item.label}</a>
+                </Link>
+              </li>
+            ))}
           </ul>
         </div>
         <div className="footer__col">
           <div className="newsletter">
-            <h3 className="footer__heading">newsletter</h3>
+            <h3 className="footer__heading">{footerContent.newsletter.title}</h3>
             <p className="newsletter__info">
-              Sign up to our newsletter and we&apos;ll keep you up-to-date with
-              the latest arrivals and special offers.
+              {footerContent.newsletter.description}
             </p>
             <Form
               afterSubmit={() => {
@@ -173,9 +202,9 @@ export default function Footer() {
                 </button>
               </div>
               <p className="newsletter__disclaimer">
-                By signing up you are confirming that you have read, understood
-                and accept our{" "}
-                <Link href="/privacy">
+                {newsletterDisclaimer.replace(/Privacy Policy/i, "").trim()}
+                {" "}
+                <Link href={privacyLink}>
                   <a>Privacy Policy</a>
                 </Link>
               </p>
@@ -197,25 +226,25 @@ export default function Footer() {
       <div className="gutter">
         <div className="gutter__container">
           <div className="gutter__terms">
-            <Link href="/terms">
-              <a className="gutter__terms-link">Terms</a>
-            </Link>
-            <span className="gutter__terms-space"></span>
-            <Link href="/privacy">
-              <a className="gutter__terms-link">Privacy</a>
-            </Link>
+            {termsLinks.map((item, index) => (
+              <span key={`term-${index}`}>
+                {index > 0 && <span className="gutter__terms-space"></span>}
+                <Link href={item.link || "/"}>
+                  <a className="gutter__terms-link" target={item.target || "_self"} rel={item.rel || "noopener noreferrer"}>{item.label}</a>
+                </Link>
+              </span>
+            ))}
           </div>
           <div className="gutter__copy">
-            &copy;&nbsp;{new Date().getFullYear()}&nbsp;
-            <abbr title="Jones Merchandise">Jones</abbr>&nbsp;LLC. All Rights Reserved
+            &copy;&nbsp;{new Date().getFullYear()}&nbsp;{footerContent.gutter.copy}
           </div>
           <div className="gutter__lang-currency language-currency">
             <button
               onClick={() => setDialog(DialogType.MODAL_LANG_CURRENCY)}
               className="language-currency__btn"
             >
-              {"English"} <span className="language-currency__sep">|</span>{" "}
-              {`$ ${currency}`}
+              {footerContent.gutter.languageLabel} <span className="language-currency__sep">|</span>{" "}
+              {`${footerContent.gutter.currencyLabelPrefix} ${currency}`}
             </button>
           </div>
         </div>

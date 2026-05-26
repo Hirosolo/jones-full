@@ -4,6 +4,8 @@
  * All hardcoded text from sections is extracted here.
  */
 
+import { FOOTER_SEED } from "./footerSeed"
+
 // --- Type Definitions ---
 
 export interface HeroSlide {
@@ -62,16 +64,44 @@ export interface SocialLink {
   visible: boolean
 }
 
+export interface FooterLink {
+  label: string
+  link: string
+  target?: string
+  rel?: string
+  visible?: boolean
+}
+
+export interface FooterContact {
+  address: string
+  phone: string
+  email: string
+  hours: string
+}
+
+export interface FooterNewsletter {
+  title: string
+  description: string
+  disclaimer: string
+}
+
+export interface FooterGutter {
+  termsLinks: FooterLink[]
+  copy: string
+  languageLabel: string
+  currencyLabelPrefix: string
+}
+
 export interface FooterContent {
   title: string
   description: string
   copyright: string
-  contact: {
-    email: string
-    phone: string
-    address: string
-  }
+  contact: FooterContact
+  aboutLinks: FooterLink[]
+  quickLinks: FooterLink[]
+  newsletter: FooterNewsletter
   socialLinks: SocialLink[]
+  gutter: FooterGutter
 }
 
 export interface SeoContent {
@@ -236,22 +266,7 @@ export const defaultContent: SiteContent = {
   },
 
   footer: {
-    title: 'FULFILLNEXT',
-    description: 'FulfillNext is a leading brand in the United States, offering a wide range of high-quality products at affordable prices. With a strong emphasis on creativity and innovation, we stay ahead of the latest trends and transform them into stylish collections that cater to modern lifestyles. Our mission is to do more than just provide products – we aim to inspire confidence and celebrate individuality, ensuring every shopping experience is memorable and on-trend.',
-    copyright: 'FulfillNext - All rights reserved - Detective team',
-    contact: {
-      email: 'support@fulfillnext.shop',
-      phone: '+1 (205) 693-8884',
-      address: '82920 Kuhic Route, Krajcikville, MS 75052-3698',
-    },
-    socialLinks: [
-      { platform: 'facebook', url: 'https://www.facebook.com/people/FulfillNext-Store/61588882165061/', visible: true },
-      { platform: 'twitter', url: 'https://x.com/fulfillnextcom', visible: true },
-      { platform: 'instagram', url: 'https://www.instagram.com/fulfillnextstore/', visible: true },
-      { platform: 'youtube', url: 'https://www.youtube.com/@FulfillNext-store', visible: true },
-      { platform: 'pinterest', url: 'https://www.pinterest.com/fulfillnextcom/', visible: true },
-      { platform: 'linkedin', url: 'https://www.linkedin.com/in/fulfillnext', visible: false },
-    ],
+    ...FOOTER_SEED,
   },
 
   productSeo: [],
