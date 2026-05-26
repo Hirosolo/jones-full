@@ -19,7 +19,7 @@ class HomeSliderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = HomeSlider
-        fields = ['title', 'desc_safe', 'image_url', 'link', 'button_text', 'order', 'status']
+        fields = ['type', 'title', 'desc_safe', 'image_url', 'link', 'button_text', 'order', 'status']
 
     def get_image_url(self, obj):
         request = self.context.get('request')

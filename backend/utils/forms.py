@@ -39,7 +39,7 @@ class HomeSliderAdminForm(forms.ModelForm):
     class Meta:
         model = HomeSlider
         fields = '__all__'
-        widgets = build_widgets(['desc', 'desc_safe'])
+        widgets = build_widgets(['type', 'desc', 'desc_safe'])
 
 
 class StaticPageAdminForm(forms.ModelForm):

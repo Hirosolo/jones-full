@@ -14,6 +14,7 @@ class HomeSlider(models.Model):
     """
     Slider trên trang chủ.
     """
+    type = models.CharField(max_length=100, blank=True, help_text='Text hiển thị phía sau tiêu đề slider')
     title = models.CharField(max_length=100, help_text='Tiêu đề slider')
     desc = models.TextField(blank=True, help_text='Mô tả slider')
     desc_safe = models.TextField(blank=True, help_text='Mô tả an toàn')

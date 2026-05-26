@@ -373,12 +373,16 @@ function HeroSliderManagement({
   order,
   onEnabledChange,
   onOrderChange,
+  onDirty,
+  onSlidesChange,
   showToast,
 }: {
   enabled: boolean
   order: number
   onEnabledChange: (value: boolean) => void
   onOrderChange: (value: number) => void
+  onDirty: () => void
+  onSlidesChange: (slides: HeroSlideRecord[]) => void
   showToast: (message: string, type: 'success' | 'error') => void
 }) {
   const [slides, setSlides] = useState<HeroSlideRecord[]>([])
@@ -411,6 +415,7 @@ function HeroSliderManagement({
       const items = Array.isArray(data.items) ? data.items : []
       setSlides(items.map((item: any) => ({
         id: Number(item.id),
+        type: String(item.type || item.backgroundText || ''),
         title: String(item.title || ''),
         description: String(item.description || ''),
         buttonText: String(item.buttonText || ''),
@@ -431,8 +436,13 @@ function HeroSliderManagement({
     loadSlides()
   }, [loadSlides])
 
+  useEffect(() => {
+    onSlidesChange(slides)
+  }, [slides, onSlidesChange])
+
   const updateSlide = (id: number, field: keyof HeroSlideRecord, value: string | number | boolean) => {
     setSlides(prev => prev.map(slide => (slide.id === id ? { ...slide, [field]: value } : slide)))
+    onDirty()
   }
 
   const handleCreate = async () => {
@@ -440,6 +450,7 @@ function HeroSliderManagement({
     try {
       const payload = {
         slide: {
+          type: 'signature',
           title: 'New Slide',
           description: 'Text below title',
           buttonText: 'SHOP NOW',
@@ -473,6 +484,7 @@ function HeroSliderManagement({
     try {
       const payload = {
         slide: {
+          type: slide.type,
           title: slide.title,
           description: slide.description,
           buttonText: slide.buttonText,
@@ -558,6 +570,10 @@ function HeroSliderManagement({
               </div>
             </div>
             <div className='admin-field-row'>
+              <div className='admin-field'>
+                <label>Background Text</label>
+                <input value={slide.type} onChange={e => updateSlide(slide.id, 'type', e.target.value)} placeholder='Text behind the title' />
+              </div>
               <div className='admin-field'>
                 <label>Title</label>
                 <input value={slide.title} onChange={e => updateSlide(slide.id, 'title', e.target.value)} />
@@ -3127,6 +3143,7 @@ export default function AdminPage() {
   const [loginError, setLoginError] = useState('')
   const [loginLoading, setLoginLoading] = useState(false)
   const [content, setContent] = useState<SiteContent>(stripHeroSlidesFromContent(defaultContent))
+  const [heroSlides, setHeroSlides] = useState<HeroSlideRecord[]>([])
   const [activeSection, setActiveSection] = useState<SectionKey>('seo')
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
@@ -3207,6 +3224,38 @@ export default function AdminPage() {
   const handleSave = async () => {
     setSaving(true)
     try {
+      for (const slide of heroSlides) {
+        const payload = {
+          slide: {
+            type: slide.type,
+            title: slide.title,
+            description: slide.description,
+            buttonText: slide.buttonText,
+            image: slide.image,
+            link: slide.link,
+            order: Number(slide.order) || 1,
+            status: slide.status,
+          },
+        }
+
+        const response = slide.id
+          ? await fetch(`/api/admin/hero-slides/${slide.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            })
+          : await fetch('/api/admin/hero-slides', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            })
+
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({} as any))
+          throw new Error(data.error || `Hero slide save failed (HTTP ${response.status})`)
+        }
+      }
+
       // Products/brands/tags/articles live in Django now — the Blob only
       // holds home/footer/seo/menu state, so no read-modify-write merge
       // against sibling fields is needed here.
@@ -3477,6 +3526,8 @@ export default function AdminPage() {
                   order={content.home.hero.order}
                   onEnabledChange={value => updateHomeSection('hero', 'enabled', value)}
                   onOrderChange={value => updateHomeSection('hero', 'order', value)}
+                  onDirty={() => setHasChanges(true)}
+                  onSlidesChange={setHeroSlides}
                   showToast={showToast}
                 />
             </div>

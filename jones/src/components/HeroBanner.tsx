@@ -7,7 +7,6 @@ import { RiRadioButtonLine, RiCheckboxBlankCircleFill } from "react-icons/ri";
 import { useAnnouncementState } from "@Contexts/UIContext";
 import useMouseCoords from "@Hooks/useMouseCoords";
 import useScrollTop from "@Hooks/useScrollTop";
-import { range } from "src/utils";
 import SocialIcons from "./common/SocialButtons";
 
 import BannerImage1 from "@Images/acdc-hoodie-banner.webp";
@@ -15,13 +14,62 @@ import BannerImage2 from "@Images/monsterEnergy-cap-banner.webp";
 import BannerImage3 from "@Images/starWar-cup-banner.webp";
 import { MoonLoader } from "react-spinners";
 
-const VIEWS_COUNT = 3;
 const INTERVAL = 6000;
 
+type HeroSlide = {
+  order?: number;
+  type: string;
+  secondary: { highlighted: string; text: string };
+  title: string;
+  imageSrc: {
+    width: number;
+    height: number;
+    src: string;
+  };
+  url: string;
+};
+
+type BackendHeroSlide = {
+  type?: string;
+  title?: string;
+  description?: string;
+  buttonText?: string;
+  image?: string;
+  link?: string;
+};
+
+const IMAGE_LOOKUP: Record<string, { width: number; height: number; src: string }> = {
+  "/assets/images/acdc-hoodie-banner.webp": BannerImage1,
+  "/assets/images/monsterEnergy-cap-banner.webp": BannerImage2,
+  "/assets/images/starWar-cup-banner.webp": BannerImage3,
+  "/img/hero-slide-1.png": BannerImage1,
+  "/img/hero-slide-2.png": BannerImage2,
+  "/img/hero-slide-3.png": BannerImage3,
+};
+
+function getImageSource(imagePath: string) {
+  return IMAGE_LOOKUP[imagePath] || BannerImage1;
+}
+
+function splitSecondaryText(description: string) {
+  const normalized = String(description || "").trim();
+  if (!normalized) {
+    return { highlighted: "", text: "" };
+  }
+
+  const parts = normalized.split(/\s+/);
+  const highlighted = parts.shift() || "";
+  return {
+    highlighted,
+    text: parts.join(" "),
+  };
+}
+
 export default function HeroBanner() {
-  const [activeView, setActiveView] = useState(VIEWS_COUNT - 1);
+  const [slides, setSlides] = useState<HeroSlide[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeView, setActiveView] = useState(0);
   const bannerRef = useRef<HTMLDivElement>(null);
-  const rAFRef = useRef(0);
   const router = useRouter();
 
   const announcementVisible = useAnnouncementState();
@@ -31,19 +79,83 @@ export default function HeroBanner() {
   const short = router.pathname != "/";
 
   useEffect(() => {
-    if (!!bannerRef.current) {
-      let currentTime = performance.now();
+    let cancelled = false;
 
-      rAFRef.current = requestAnimationFrame(function changeSlide(tick) {
-        if (tick - currentTime > INTERVAL) {
-          setActiveView((activeView + 1) % VIEWS_COUNT);
-          currentTime = tick;
+    async function loadHeroSlides() {
+      setLoading(true);
+      try {
+        const response = await fetch("/api/shop/cms/site-content/", { cache: "no-store" });
+        const data = await response.json().catch(() => ({}));
+        const heroSlides = Array.isArray(data?.home?.hero?.defaultSlides)
+          ? data.home.hero.defaultSlides
+          : [];
+
+        const normalized = heroSlides
+          .map((slide: BackendHeroSlide) => {
+            const title = String(slide?.title || "").trim();
+            const description = String(slide?.description || "").trim();
+            const imagePath = String(slide?.image || "").trim();
+            const imageSrc = getImageSource(imagePath);
+            const order = Number((slide as any)?.order || 0) || 0;
+
+            if (!title || !imagePath) {
+              return null;
+            }
+
+            return {
+              order,
+              type: String(slide?.type || "").trim() || title,
+              secondary: splitSecondaryText(description),
+              title,
+              imageSrc,
+              url: String(slide?.link || "/").trim() || "/",
+            } as HeroSlide;
+          })
+          .filter((slide: HeroSlide | null): slide is HeroSlide => Boolean(slide));
+
+        normalized.sort((left, right) => (left.order || 0) - (right.order || 0));
+        console.log("[HeroBanner] loaded hero slides", normalized.length);
+
+        if (!cancelled) {
+          setSlides(normalized);
+          setActiveView(0);
         }
-        rAFRef.current = requestAnimationFrame(changeSlide);
-      });
-      return () => cancelAnimationFrame(rAFRef.current);
+      } catch (error) {
+        console.log("[HeroBanner] failed to load hero slides", error);
+        if (!cancelled) {
+          setSlides([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
     }
-  }, [activeView]);
+
+    loadHeroSlides();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (slides.length < 2) return;
+
+    const interval = window.setInterval(() => {
+      setActiveView(current => (current + 1) % slides.length);
+    }, INTERVAL);
+
+    return () => window.clearInterval(interval);
+  }, [slides.length]);
+
+  useEffect(() => {
+    if (activeView >= slides.length) {
+      setActiveView(0);
+    }
+  }, [activeView, slides.length]);
+
+  const activeSlide = slides[activeView] || slides[0];
 
   return (
     <section
@@ -56,10 +168,10 @@ export default function HeroBanner() {
     >
       <div ref={bannerRef} className="banner__container">
         <div className="banner__background"></div>
-        {short ? null : (
+        {short || loading ? null : (
           <>
             <div className="banner__indicators">
-              {range(0, slidesData.length - 1).map((_, i) => (
+              {slides.map((_, i) => (
                 <button
                   aria-label={"slide " + (i + 1)}
                   key={"indicator" + i}
@@ -83,9 +195,9 @@ export default function HeroBanner() {
             </div>
 
             <div className="banner__main">
-              {!!bannerRef.current ? (
+              {!!bannerRef.current && activeSlide ? (
                 <>
-                  {slidesData.map((data, i) => (
+                  {slides.map((data, i) => (
                     <div
                       key={data.title + data.type}
                       className={
@@ -124,24 +236,24 @@ export default function HeroBanner() {
                           height={data.imageSrc.height}
                           src={data.imageSrc}
                           priority
-                          alt=""
+                          alt={data.title}
                         />
                       </div>
                     </div>
                   ))}
                   <div className="banner__action-button">
-                    <Link href={slidesData[activeView].url}>
+                    <Link href={activeSlide.url}>
                       <a className="banner__action-button-link">
                         <span>buy yours</span>
                       </a>
                     </Link>
                   </div>
                 </>
-              ) : (
+              ) : loading ? (
                 <div className="banner__loader">
                   <MoonLoader color="#fff" className="banner__loader-spinner" />
                 </div>
-              )}
+              ) : null}
             </div>
           </>
         )}
@@ -149,27 +261,3 @@ export default function HeroBanner() {
     </section>
   );
 }
-
-const slidesData = [
-  {
-    secondary: { highlighted: "exclusive", text: "premium apparel" },
-    type: "signature",
-    title: "collections",
-    imageSrc: BannerImage1,
-    url: "/category/clothing",
-  },
-  {
-    secondary: { highlighted: "new", text: "arrivals" },
-    type: "modern",
-    title: "accessories",
-    imageSrc: BannerImage3,
-    url: "/category/accessories",
-  },
-  {
-    secondary: { highlighted: "vintage", text: "aesthetic" },
-    type: "classic",
-    title: "home decor",
-    imageSrc: BannerImage2,
-    url: "/category/home-decor",
-  },
-];

@@ -3,6 +3,7 @@
     "model": "utils.homeslider",
     "pk": 1,
     "fields": {
+      "type": "signature",
       "title": "Discover. Design. Define Your Style",
       "desc": "Premium trending products with worldwide shipping",
       "desc_safe": "Premium trending products with worldwide shipping",
@@ -17,6 +18,7 @@
     "model": "utils.homeslider",
     "pk": 2,
     "fields": {
+      "type": "modern",
       "title": "New Arrivals",
       "desc": "Explore the latest collection of fashion, accessories & home decor",
       "desc_safe": "Explore the latest collection of fashion, accessories & home decor",
@@ -31,6 +33,7 @@
     "model": "utils.homeslider",
     "pk": 3,
     "fields": {
+      "type": "classic",
       "title": "Premium Quality",
       "desc": "Custom-designed products made just for you",
       "desc_safe": "Custom-designed products made just for you",

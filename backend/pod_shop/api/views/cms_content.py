@@ -22,6 +22,7 @@ from utils.models import HomeSlider
 
 DEFAULT_HERO_SLIDES = [
     {
+        'type': 'signature',
         'title': 'collections',
         'description': 'exclusive premium apparel',
         'buttonText': 'buy yours',
@@ -30,6 +31,7 @@ DEFAULT_HERO_SLIDES = [
         'order': 1,
     },
     {
+        'type': 'modern',
         'title': 'accessories',
         'description': 'new arrivals',
         'buttonText': 'buy yours',
@@ -38,6 +40,7 @@ DEFAULT_HERO_SLIDES = [
         'order': 2,
     },
     {
+        'type': 'classic',
         'title': 'home decor',
         'description': 'vintage aesthetic',
         'buttonText': 'buy yours',
@@ -78,6 +81,12 @@ def _normalize_hero_slide(slide, fallback_order):
         or slide.get('desc_safe')
         or ''
     ).strip()
+    background_text = str(
+        slide.get('type')
+        or slide.get('backgroundText')
+        or slide.get('background_text')
+        or ''
+    ).strip()
     button_text = str(
         slide.get('buttonText')
         or slide.get('button_text')
@@ -93,6 +102,7 @@ def _normalize_hero_slide(slide, fallback_order):
         order = fallback_order
 
     return {
+        'type': background_text,
         'title': title,
         'description': description,
         'button_text': button_text or 'SHOP NOW',
@@ -109,6 +119,7 @@ def _serialize_home_slider(obj, include_id=False):
         image_url = obj.image.url
 
     slide = {
+        'type': obj.type or obj.title,
         'title': obj.title,
         'description': obj.desc_safe or obj.desc or '',
         'buttonText': obj.button_text or '',
@@ -147,6 +158,7 @@ def _sync_home_slider_rows(slides):
     HomeSlider.objects.all().delete()
     for item in normalized:
         HomeSlider.objects.create(
+            type=item['type'],
             title=item['title'],
             desc=item['description'],
             desc_safe=item['description'],
@@ -180,6 +192,7 @@ def _resolve_home_hero(payload):
             item = _normalize_hero_slide(slide, index)
             if item:
                 normalized_slides.append({
+                    'type': item['type'],
                     'title': item['title'],
                     'description': item['description'],
                     'buttonText': item['button_text'],
@@ -219,6 +232,7 @@ def hero_slider_list_view(request):
         return Response({'error': 'Invalid hero slide payload.'}, status=status.HTTP_400_BAD_REQUEST)
 
     slider = HomeSlider.objects.create(
+        type=item['type'],
         title=item['title'],
         desc=item['description'],
         desc_safe=item['description'],
@@ -254,6 +268,7 @@ def hero_slider_detail_view(request, slide_id):
         return Response({'error': 'Invalid hero slide payload.'}, status=status.HTTP_400_BAD_REQUEST)
 
     slider.title = item['title']
+    slider.type = item['type']
     slider.desc = item['description']
     slider.desc_safe = item['description']
     slider.image = item['image'] or '/img/hero-banner-default.png'

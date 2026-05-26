@@ -7,6 +7,7 @@
 // --- Type Definitions ---
 
 export interface HeroSlide {
+  type: string
   title: string
   description: string
   buttonText: string
@@ -121,6 +122,7 @@ export const defaultContent: SiteContent = {
       order: 1,
       defaultSlides: [
         {
+          type: 'signature',
           title: 'Discover. Design. Define Your Style',
           description: 'Premium trending products with worldwide shipping',
           buttonText: 'SHOP NOW',
@@ -128,6 +130,7 @@ export const defaultContent: SiteContent = {
           link: '/c/',
         },
         {
+          type: 'modern',
           title: 'New Arrivals',
           description: 'Explore the latest collection of fashion, accessories & home decor',
           buttonText: 'EXPLORE',
@@ -135,6 +138,7 @@ export const defaultContent: SiteContent = {
           link: '/c/',
         },
         {
+          type: 'classic',
           title: 'Premium Quality',
           description: 'Custom-designed products made just for you',
           buttonText: 'DISCOVER',
