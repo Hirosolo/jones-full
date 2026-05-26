@@ -28,6 +28,13 @@ const SECTIONS = [
 ] as const
 
 type SectionKey = (typeof SECTIONS)[number]['key']
+const ADMIN_DATA_REFRESH_EVENT = 'admin:data-refresh'
+
+function triggerAdminDataRefresh() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(ADMIN_DATA_REFRESH_EVENT))
+  }
+}
 
 // ─── Image Upload Component ───
 interface ImageUploaderProps {
@@ -403,7 +410,6 @@ function HeroSliderManagement({
   }, [])
 
   const loadSlides = useCallback(async () => {
-    setLoading(true)
     try {
       const res = await fetch('/api/admin/hero-slides', { cache: 'no-store' })
       const data = await res.json().catch(() => ({}))
@@ -428,6 +434,11 @@ function HeroSliderManagement({
     }
   }, [showToast])
 
+      useEffect(() => {
+        const handleRefresh = () => { void loadSlides() }
+        window.addEventListener(ADMIN_DATA_REFRESH_EVENT, handleRefresh)
+        return () => window.removeEventListener(ADMIN_DATA_REFRESH_EVENT, handleRefresh)
+      }, [loadSlides])
   useEffect(() => {
     loadSlides()
   }, [loadSlides])
@@ -467,6 +478,7 @@ function HeroSliderManagement({
       await loadSlides()
       await triggerRevalidate()
       showToast('Hero slide created', 'success')
+      triggerAdminDataRefresh()
     } catch (error: any) {
       console.log('[admin hero-slides] create error', error)
       showToast(error.message || 'Failed to create hero slide', 'error')
@@ -501,6 +513,7 @@ function HeroSliderManagement({
       await loadSlides()
       await triggerRevalidate()
       showToast('Hero slide saved', 'success')
+      triggerAdminDataRefresh()
     } catch (error: any) {
       console.log('[admin hero-slides] save error', error)
       showToast(error.message || 'Failed to save hero slide', 'error')
@@ -519,6 +532,7 @@ function HeroSliderManagement({
       await loadSlides()
       await triggerRevalidate()
       showToast('Hero slide deleted', 'success')
+      triggerAdminDataRefresh()
     } catch (error: any) {
       console.log('[admin hero-slides] delete error', error)
       showToast(error.message || 'Failed to delete hero slide', 'error')
@@ -748,6 +762,7 @@ function ProductManagement({ showToast }: { showToast: (msg: string, type: 'succ
 
       // Refresh dropdown options so the new item appears.
       await fetchOptions()
+      triggerAdminDataRefresh()
 
       // Pre-select the newly-created item in the form.
       if (createdId) {
@@ -807,6 +822,14 @@ function ProductManagement({ showToast }: { showToast: (msg: string, type: 'succ
 
   useEffect(() => { fetchProducts() }, [fetchProducts])
   useEffect(() => { fetchOptions() }, [fetchOptions])
+  useEffect(() => {
+    const handleRefresh = () => {
+      void fetchProducts()
+      void fetchOptions()
+    }
+    window.addEventListener(ADMIN_DATA_REFRESH_EVENT, handleRefresh)
+    return () => window.removeEventListener(ADMIN_DATA_REFRESH_EVENT, handleRefresh)
+  }, [fetchOptions, fetchProducts])
 
   const handleSearch = () => { setPage(1); fetchProducts(1, search) }
 
@@ -853,6 +876,7 @@ function ProductManagement({ showToast }: { showToast: (msg: string, type: 'succ
       setProducts(prev => prev.filter(p => p.id !== id))
       setTotal(t => Math.max(0, t - 1))
       showToast(`Product "${name}" deleted`, 'success')
+      triggerAdminDataRefresh()
       // Revalidate in background for user-facing pages
       fetch('/api/admin/revalidate', {
         method: 'POST',
@@ -927,6 +951,7 @@ function ProductManagement({ showToast }: { showToast: (msg: string, type: 'succ
       }).catch(() => {})
       setMode('list')
       fetchProducts()
+      triggerAdminDataRefresh()
     } catch (err: any) {
       showToast(err.message || 'Failed to save', 'error')
     } finally {
@@ -1450,6 +1475,12 @@ function MainMenuManagement() {
 
   useEffect(() => { fetchMenus() }, [fetchMenus])
 
+  useEffect(() => {
+    const handleRefresh = () => { void fetchMenus() }
+    window.addEventListener(ADMIN_DATA_REFRESH_EVENT, handleRefresh)
+    return () => window.removeEventListener(ADMIN_DATA_REFRESH_EVENT, handleRefresh)
+  }, [fetchMenus])
+
   return (
     <div>
       {toast && (
@@ -1670,6 +1701,12 @@ function CategoryManagement() {
 
   useEffect(() => { fetchCats() }, [fetchCats])
 
+  useEffect(() => {
+    const handleRefresh = () => { void fetchCats() }
+    window.addEventListener(ADMIN_DATA_REFRESH_EVENT, handleRefresh)
+    return () => window.removeEventListener(ADMIN_DATA_REFRESH_EVENT, handleRefresh)
+  }, [fetchCats])
+
   const resetForm = () => {
     setFormData({ name: '', order: '1', desc: '' })
     setImageFile(null)
@@ -1719,6 +1756,7 @@ function CategoryManagement() {
       showToastMsg(data.message || (editingCat ? 'Category updated!' : 'Category created!'), 'success')
       // Optimistic: re-fetch to get the new item with server-assigned fields
       fetchCats()
+      triggerAdminDataRefresh()
       // Revalidate in background for user-facing pages
       fetch('/api/admin/revalidate', {
         method: 'POST',
@@ -1747,6 +1785,7 @@ function CategoryManagement() {
       // Optimistic: remove from UI immediately
       setCats(prev => prev.filter(c => c.id !== cat.id))
       showToastMsg(data.message || 'Category deleted', 'success')
+      triggerAdminDataRefresh()
       // Revalidate in background for user-facing pages
       fetch('/api/admin/revalidate', {
         method: 'POST',
@@ -1996,6 +2035,15 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
     fetchBrandGroups()
   }, [fetchBrands, fetchBrandGroups])
 
+  useEffect(() => {
+    const handleRefresh = () => {
+      void fetchBrands()
+      void fetchBrandGroups()
+    }
+    window.addEventListener(ADMIN_DATA_REFRESH_EVENT, handleRefresh)
+    return () => window.removeEventListener(ADMIN_DATA_REFRESH_EVENT, handleRefresh)
+  }, [fetchBrandGroups, fetchBrands])
+
   // Distinct league names from existing brands — feeds the league combobox.
   const leagueOptions = React.useMemo(() => {
     const set = new Set<string>()
@@ -2107,6 +2155,7 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
 
       showToast(data.message || (editing ? 'Brand updated!' : 'Brand created!'), 'success')
       await Promise.all([fetchBrands(), fetchBrandGroups()])
+      triggerAdminDataRefresh()
       // Refresh the public-facing menu/listing so league regroups immediately.
       fetch('/api/admin/revalidate', {
         method: 'POST',
@@ -2175,6 +2224,7 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
       if (!res.ok) throw new Error(data.error || 'Failed to delete')
       setBrands(prev => prev.filter(x => x.id !== b.id))
       showToast(data.message || 'Brand deleted', 'success')
+      triggerAdminDataRefresh()
       fetch('/api/admin/revalidate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2198,6 +2248,7 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
 
       showToast(data.message || 'Brand group deleted', 'success')
       await Promise.all([fetchBrands(), fetchBrandGroups()])
+      triggerAdminDataRefresh()
       fetch('/api/admin/revalidate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2660,6 +2711,12 @@ function TagManagement() {
 
   useEffect(() => { fetchTags() }, [fetchTags])
 
+  useEffect(() => {
+    const handleRefresh = () => { void fetchTags() }
+    window.addEventListener(ADMIN_DATA_REFRESH_EVENT, handleRefresh)
+    return () => window.removeEventListener(ADMIN_DATA_REFRESH_EVENT, handleRefresh)
+  }, [fetchTags])
+
   const resetForm = () => {
     setFormData({ name: '' })
     setEditingTag(null)
@@ -2699,6 +2756,7 @@ function TagManagement() {
       } else {
         fetchTags()
       }
+      triggerAdminDataRefresh()
       // Revalidate in background for user-facing pages
       fetch('/api/admin/revalidate', {
         method: 'POST',
@@ -2727,6 +2785,7 @@ function TagManagement() {
       // Optimistic: remove from UI immediately
       setTags(prev => prev.filter(t => t.id !== tag.id))
       showToastMsg(data.message || 'Tag deleted', 'success')
+      triggerAdminDataRefresh()
       // Revalidate in background for user-facing pages
       fetch('/api/admin/revalidate', {
         method: 'POST',
@@ -2983,6 +3042,15 @@ function ArticleManagement({ showToast }: { showToast: (msg: string, type: 'succ
   useEffect(() => { fetchArticles() }, [fetchArticles])
   useEffect(() => { fetchOptions() }, [fetchOptions])
 
+  useEffect(() => {
+    const handleRefresh = () => {
+      void fetchArticles()
+      void fetchOptions()
+    }
+    window.addEventListener(ADMIN_DATA_REFRESH_EVENT, handleRefresh)
+    return () => window.removeEventListener(ADMIN_DATA_REFRESH_EVENT, handleRefresh)
+  }, [fetchArticles, fetchOptions])
+
   const handleSearch = () => { setPage(1); fetchArticles(1, search, statusFilter) }
 
   const handleCreate = () => {
@@ -3035,6 +3103,7 @@ function ArticleManagement({ showToast }: { showToast: (msg: string, type: 'succ
       setArticles(prev => prev.filter(a => a.id !== id))
       setTotal(t => Math.max(0, t - 1))
       showToast(`Article "${title}" deleted`, 'success')
+      triggerAdminDataRefresh()
       fetch('/api/admin/revalidate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -3102,6 +3171,7 @@ function ArticleManagement({ showToast }: { showToast: (msg: string, type: 'succ
 
       setMode('list')
       fetchArticles()
+      triggerAdminDataRefresh()
     } catch (err: any) {
       showToast(err.message || 'Failed to save', 'error')
     } finally {
@@ -3402,6 +3472,12 @@ function ArticleCategoryManagement({ showToast }: { showToast: (msg: string, typ
 
   useEffect(() => { fetchCategories() }, [fetchCategories])
 
+  useEffect(() => {
+    const handleRefresh = () => { void fetchCategories() }
+    window.addEventListener(ADMIN_DATA_REFRESH_EVENT, handleRefresh)
+    return () => window.removeEventListener(ADMIN_DATA_REFRESH_EVENT, handleRefresh)
+  }, [fetchCategories])
+
   const resetForm = () => {
     setForm({ name: '', slug: '', desc: '', order: 0, metaTitle: '', metaDesc: '' })
     setEditingId(null)
@@ -3442,6 +3518,7 @@ function ArticleCategoryManagement({ showToast }: { showToast: (msg: string, typ
       }).catch(() => {})
       resetForm()
       fetchCategories()
+      triggerAdminDataRefresh()
     } catch (err: any) {
       showToast(err.message || 'Save failed', 'error')
     } finally {
@@ -3467,6 +3544,7 @@ function ArticleCategoryManagement({ showToast }: { showToast: (msg: string, typ
         body: JSON.stringify({ paths: ['/blog'], tags: ['cms-content'] }),
       }).catch(() => {})
       fetchCategories()
+      triggerAdminDataRefresh()
     } catch {
       showToast('Failed to delete category', 'error')
     } finally {
@@ -3892,7 +3970,7 @@ export default function AdminPage() {
             )}
             <button
               className='admin-btn-outline'
-              onClick={() => window.open('https://www.fulfillnext.com', '_blank')}
+              onClick={() => window.open('http://localhost:3000', '_blank')}
             >
               👁️ Preview Site
             </button>
