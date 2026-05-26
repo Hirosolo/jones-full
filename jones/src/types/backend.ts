@@ -16,6 +16,7 @@ export interface BackendCategory {
   url?: string;
   full_url?: string;
   desc?: string;
+  img?: string;
   image?: string;
   order?: number;
   num_product?: number;

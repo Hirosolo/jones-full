@@ -16,6 +16,17 @@ export const categories: string[] = CategoriesData.categories;
 
 export function buildCategoriesList(categoryItems: CategoryMenuItem[]) {
   return [
+  ...categoryItems
+    .filter((category) => getPathString(category.slug || category.name) !== "all")
+    .map((category) => (
+      <li key={category.slug || category.name} className="sidebar__links-item sidebar__links-accordion">
+        <Link href={"/category/" + getPathString(category.slug || category.name)}>
+          <a className="sidebar__anchor" style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            {category.name}
+          </a>
+        </Link>
+      </li>
+    )),
   <li key="view-all" className="sidebar__links-item sidebar__links-accordion">
     <Link href="/category/all">
       <a className="sidebar__anchor" style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
@@ -23,14 +34,5 @@ export function buildCategoriesList(categoryItems: CategoryMenuItem[]) {
       </a>
     </Link>
   </li>,
-  ...categoryItems.map((category) => (
-    <li key={category.slug || category.name} className="sidebar__links-item sidebar__links-accordion">
-      <Link href={"/category/" + getPathString(category.slug || category.name)}>
-        <a className="sidebar__anchor" style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-          {category.name}
-        </a>
-      </Link>
-    </li>
-  ))
   ];
 }

@@ -1,8 +1,10 @@
 import type { NextPage, GetStaticProps } from "next";
 import dynamic from "next/dynamic";
 import type { ProductComponentType } from "src/types/shared";
+import type { BackendCategory } from "src/types/backend";
 
 import { getLatestProducts } from "@Lib/api/products";
+import { getCategories } from "@Lib/api/catalog";
 
 const CollectionSection = dynamic(
   () => import("@Components/home/CollectionSection")
@@ -17,6 +19,7 @@ const Home: NextPage<HomePropTypes> = ({
   bestSellers,
   newArrivalsImgDataUrls,
   bestSellersImgDataUrls,
+  categories,
 }) => {
   return (
     <>
@@ -27,7 +30,7 @@ const Home: NextPage<HomePropTypes> = ({
         title="new arrivals"
         url="/category/new"
       />
-      <GenderSection />
+      <GenderSection categories={categories} />
       <ProductsSection
         productImageDataUrls={bestSellersImgDataUrls}
         products={bestSellers}
@@ -40,11 +43,18 @@ const Home: NextPage<HomePropTypes> = ({
 
 export const getStaticProps: GetStaticProps = async () => {
   let products: ProductComponentType[] = [];
+  let categories: BackendCategory[] = [];
 
   try {
     products = await getLatestProducts();
   } catch (err) {
     console.error("[Home] Failed to fetch latest products:", err);
+  }
+
+  try {
+    categories = await getCategories();
+  } catch (err) {
+    console.error("[Home] Failed to fetch categories:", err);
   }
 
   const shuffled = [...products];
@@ -67,6 +77,7 @@ export const getStaticProps: GetStaticProps = async () => {
       bestSellers,
       newArrivalsImgDataUrls,
       bestSellersImgDataUrls,
+      categories,
     },
     revalidate: 300, // ISR: revalidate every 5 minutes
   };
@@ -79,4 +90,5 @@ interface HomePropTypes {
   bestSellers: ProductComponentType[];
   newArrivalsImgDataUrls: Record<string, string>;
   bestSellersImgDataUrls: Record<string, string>;
+  categories: BackendCategory[];
 }

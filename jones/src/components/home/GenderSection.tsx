@@ -1,5 +1,7 @@
 import Link from "next/link";
-import Image from "next/image";
+import Image, { type StaticImageData } from "next/image";
+import type { BackendCategory } from "src/types/backend";
+import { getPathString } from "src/utils";
 
 import bannerImage from "@Images/pexels-theia-sight-4932179.jpg";
 import clothingImage from "@Images/clothing.jpg";
@@ -8,7 +10,55 @@ import footwearImage from "@Images/footware.webp";
 import homeDecorImage from "@Images/homedecor.jpeg";
 import saleImage from "@Images/sale.jpg";
 
-export default function GenderSection() {
+type CategorySectionItem = BackendCategory & {
+  image?: string;
+  img?: string;
+};
+
+interface GenderSectionProps {
+  categories: CategorySectionItem[];
+}
+
+function resolveCategoryImage(
+  category: CategorySectionItem | undefined,
+  fallbackImage: string | StaticImageData
+): string | StaticImageData {
+  const value = (category?.image || category?.img || "").trim();
+  if (!value) return fallbackImage;
+  if (value.startsWith("/api/media/")) return value;
+  if (value.startsWith("/media/")) return `/api/media/${value.slice("/media/".length)}`;
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    try {
+      const parsed = new URL(value);
+      if (parsed.pathname.startsWith("/media/")) {
+        return `/api/media/${parsed.pathname.slice("/media/".length)}`;
+      }
+    } catch {
+      return value;
+    }
+  }
+  return value;
+}
+
+export default function GenderSection({ categories }: GenderSectionProps) {
+  const categoryBlocks = categorySectionBlocks.map((fallbackBlock, index) => {
+    const category = [...categories]
+      .filter((item) => (item.name || "").trim())
+      .sort((left, right) => {
+        const leftOrder = left.order ?? 0;
+        const rightOrder = right.order ?? 0;
+        if (leftOrder !== rightOrder) return leftOrder - rightOrder;
+        return (left.name || "").localeCompare(right.name || "");
+      })[index];
+
+    return {
+      className: fallbackBlock.className,
+      href: category?.slug ? `/category/${getPathString(category.slug)}` : fallbackBlock.href,
+      imgSource: resolveCategoryImage(category, fallbackBlock.imgSource),
+      title: category?.name || fallbackBlock.title,
+    };
+  });
+
   return (
     <section className="gender">
       <div className="gender__container">
@@ -27,7 +77,7 @@ export default function GenderSection() {
           </h3>
         </div>
         <div className="gender__grid">
-          {categorySectionBlocks.map(({ className, href, imgSource, title }) => (
+          {categoryBlocks.map(({ className, href, imgSource, title }) => (
             <div key={className} className={"gender__block " + className}>
               <Link href={href}>
                 <a className="gender__block-link">

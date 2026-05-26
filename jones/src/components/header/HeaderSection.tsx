@@ -191,15 +191,14 @@ export default function HeaderSection() {
         {/* ── CATEGORIES: Grid Layout ──────────────────────────────── */}
         {dropdownMode === "categories" && (
           <div className="header__brands-accordion header__categories-grid">
-            <div className="header__brands-group">
-              <Link href="/category/all">
-                <a className="header__brands-group-btn header__brands-group-btn--link">
-                  VIEW ALL
-                </a>
-              </Link>
-            </div>
             {categories
-              .filter((category) => category.slug !== "all")
+              .filter((category) => getPathString(category.slug || category.name) !== "all")
+              .sort((left, right) => {
+                const leftOrder = left.order ?? 0;
+                const rightOrder = right.order ?? 0;
+                if (leftOrder !== rightOrder) return leftOrder - rightOrder;
+                return (left.name || "").localeCompare(right.name || "");
+              })
               .map((category) => (
               <div key={category.slug} className="header__brands-group">
                 <Link href={"/category/" + getPathString(category.slug || category.name)}>
@@ -209,6 +208,13 @@ export default function HeaderSection() {
                 </Link>
               </div>
             ))}
+            <div className="header__brands-group">
+              <Link href="/category/all">
+                <a className="header__brands-group-btn header__brands-group-btn--link">
+                  VIEW ALL
+                </a>
+              </Link>
+            </div>
           </div>
         )}
 
