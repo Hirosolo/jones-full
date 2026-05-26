@@ -2,6 +2,7 @@ import type { NextPage, GetStaticProps } from "next";
 import dynamic from "next/dynamic";
 import type { ProductComponentType } from "src/types/shared";
 import type { BackendCategory } from "src/types/backend";
+import { defaultContent, type HomeContent, type SiteContent } from "src/data/defaultContent";
 
 import { getLatestProducts } from "@Lib/api/products";
 import { getCategories } from "@Lib/api/catalog";
@@ -13,30 +14,40 @@ const ProductsSection = dynamic(
   () => import("@Components/home/ProductsSection")
 );
 const GenderSection = dynamic(() => import("@Components/home/GenderSection"));
+const FaqSection = dynamic(() => import("@Components/home/FaqSection"));
 
 const Home: NextPage<HomePropTypes> = ({
+  collectionSection,
   newArrivals,
   bestSellers,
   newArrivalsImgDataUrls,
   bestSellersImgDataUrls,
   categories,
+  homeSections,
 }) => {
   return (
     <>
-      <CollectionSection />
-      <ProductsSection
-        productImageDataUrls={newArrivalsImgDataUrls}
-        products={newArrivals}
-        title="new arrivals"
-        url="/category/new"
-      />
-      <GenderSection categories={categories} />
-      <ProductsSection
-        productImageDataUrls={bestSellersImgDataUrls}
-        products={bestSellers}
-        title="best sellers"
-        url="/category/new?sort=best"
-      />
+      <CollectionSection content={collectionSection} />
+      {homeSections.latestProducts.enabled && (
+        <ProductsSection
+          productImageDataUrls={newArrivalsImgDataUrls}
+          products={newArrivals}
+          title={homeSections.latestProducts.title}
+          subtitle={homeSections.latestProducts.subtitle}
+          url="/category/new"
+        />
+      )}
+      <GenderSection categories={categories} content={homeSections.categories} />
+      {homeSections.bestsellers.enabled && (
+        <ProductsSection
+          productImageDataUrls={bestSellersImgDataUrls}
+          products={bestSellers}
+          title={homeSections.bestsellers.title}
+          subtitle={homeSections.bestsellers.subtitle}
+          url="/category/new?sort=best"
+        />
+      )}
+      <FaqSection content={homeSections.faq} />
     </>
   );
 };
@@ -44,6 +55,7 @@ const Home: NextPage<HomePropTypes> = ({
 export const getStaticProps: GetStaticProps = async () => {
   let products: ProductComponentType[] = [];
   let categories: BackendCategory[] = [];
+  let homeSections: HomeContent = defaultContent.home;
 
   try {
     products = await getLatestProducts();
@@ -55,6 +67,20 @@ export const getStaticProps: GetStaticProps = async () => {
     categories = await getCategories();
   } catch (err) {
     console.error("[Home] Failed to fetch categories:", err);
+  }
+
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_DJANGO_BASE_URL || "http://localhost:8000";
+    const response = await fetch(`${baseUrl}/api/shop/cms/site-content/`, { cache: "no-store" });
+    if (response.ok) {
+      const data = (await response.json().catch(() => ({}))) as Partial<SiteContent>;
+      homeSections = {
+        ...defaultContent.home,
+        ...(data.home || {}),
+      } as HomeContent;
+    }
+  } catch (err) {
+    console.error("[Home] Failed to fetch CMS content:", err);
   }
 
   const shuffled = [...products];
@@ -73,11 +99,13 @@ export const getStaticProps: GetStaticProps = async () => {
 
   return {
     props: {
+      collectionSection: homeSections.collections,
       newArrivals,
       bestSellers,
       newArrivalsImgDataUrls,
       bestSellersImgDataUrls,
       categories,
+      homeSections,
     },
     revalidate: 300, // ISR: revalidate every 5 minutes
   };
@@ -86,9 +114,11 @@ export const getStaticProps: GetStaticProps = async () => {
 export default Home;
 
 interface HomePropTypes {
+  collectionSection: HomeContent['collections'];
   newArrivals: ProductComponentType[];
   bestSellers: ProductComponentType[];
   newArrivalsImgDataUrls: Record<string, string>;
   bestSellersImgDataUrls: Record<string, string>;
   categories: BackendCategory[];
+  homeSections: HomeContent;
 }

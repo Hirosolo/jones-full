@@ -3556,6 +3556,16 @@ export default function AdminPage() {
                     />
                   </div>
                 )}
+                {sectionKey === 'collections' && (
+                  <div className='admin-field'>
+                    <label>Description</label>
+                    <textarea
+                      value={(section as typeof section & { description: string }).description}
+                      onChange={e => updateHomeSection(sectionKey, 'description', e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+                )}
               </div>
             )
           })}

@@ -1,4 +1,5 @@
 import Image from "next/image";
+import type { SimpleSectionContent } from "src/data/defaultContent";
 import { useRef } from "react";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import { useRouter } from "next/router";
@@ -6,7 +7,13 @@ import { useRouter } from "next/router";
 import useBrandGroups from "@Hooks/useBrandGroups";
 import { getPathString } from "src/utils";
 
-export default function CollectionSection() {
+interface CollectionSectionProps {
+  content: SimpleSectionContent & { description: string };
+}
+
+export default function CollectionSection({ content }: CollectionSectionProps) {
+  if (!content.enabled) return null;
+
   const brandGroups = Object.entries(useBrandGroups());
   const router = useRouter();
   const galleryRef = useRef<HTMLDivElement>(null);
@@ -31,17 +38,13 @@ export default function CollectionSection() {
       <div className="collections__container">
         <article className="collections__intro">
           <h2 className="collections__heading">
-            explore our brand collections
+            {content.title}
           </h2>
           <p className="collections__sub-text">
-            Iconic Labels &mdash; Curated for every drop
+            {content.subtitle}
           </p>
 
-          <p className="collections__sub-text">
-            We&rsquo;ve curated a range of brand-led collections across music,
-            movies, sports, and culture so you can discover what fits your
-            style next.
-          </p>
+          <p className="collections__sub-text">{content.description}</p>
         </article>
         <div className="collections__gallery-toolbar">
           <button

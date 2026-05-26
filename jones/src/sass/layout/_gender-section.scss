@@ -5,6 +5,24 @@
 
   width: 100%;
   background-color: $c-background-dark;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.08), transparent 35%),
+    radial-gradient(circle at 85% 15%, rgba(255, 7, 58, 0.08), transparent 24%),
+    linear-gradient(180deg, #111111 0%, #0b0b0b 100%);
+  background-size: 220% 220%, 220% 220%, 100% 100%;
+  @include inline-animation(24s, infinite, 0, ease-in-out) {
+    0% {
+      background-position: 0% 0%, 0% 0%, 0% 0%;
+    }
+
+    50% {
+      background-position: 100% 0%, 0% 100%, 100% 100%;
+    }
+
+    100% {
+      background-position: 0% 0%, 0% 0%, 0% 0%;
+    }
+  }
 
   &__container {
     @extend %container;

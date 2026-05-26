@@ -11,6 +11,7 @@ import Product from "../common/Product";
 
 export default function ProductsSection({
   title,
+  subtitle,
   products,
   url,
   productImageDataUrls,
@@ -38,6 +39,7 @@ export default function ProductsSection({
     <section className="products-section">
       <div className="products-section__container">
         <h2 className="products-section__heading">#shop {title}</h2>
+        {subtitle ? <p className="products-section__subheading">{subtitle}</p> : null}
         <ul ref={listRef} className="products-section__products">
           {productsComponent}
         </ul>
@@ -69,6 +71,7 @@ export default function ProductsSection({
 
 interface PropTypes {
   title: string;
+  subtitle?: string;
   products: ProductComponentType[];
   url: string;
   productImageDataUrls: Record<string, string>;

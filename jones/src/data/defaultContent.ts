@@ -83,6 +83,7 @@ export interface SeoContent {
 
 export interface HomeContent {
   hero: HeroContent
+  collections: SimpleSectionContent & { description: string }
   latestProducts: SimpleSectionContent
   categories: SimpleSectionContent
   youtube: YoutubeContent
@@ -149,23 +150,31 @@ export const defaultContent: SiteContent = {
       ],
     },
 
-    latestProducts: {
+    collections: {
       enabled: true,
       order: 2,
-      title: 'Best Sellers This Week',
-      subtitle: 'Top picks our customers love this week',
+      title: 'Shop Collections',
+      subtitle: 'Discover our curated brand collections',
+      description: 'We\'ve curated a range of brand-led collections across music, movies, sports, and culture so you can discover what fits your style next.',
+    },
+
+    latestProducts: {
+      enabled: true,
+      order: 3,
+      title: 'Shop New Arrivals',
+      subtitle: 'Browse the latest products added to the store',
     },
 
     categories: {
       enabled: true,
-      order: 5,
+      order: 4,
       title: 'Categories',
       subtitle: '',
     },
 
     youtube: {
       enabled: true,
-      order: 6,
+      order: 5,
       title: 'Watch Our Latest Video',
       subtitle: 'Discover the latest trends and products from FulfillNext',
       videoId: 'FNMBpEYPTn4',
@@ -173,7 +182,7 @@ export const defaultContent: SiteContent = {
 
     bannerCTA: {
       enabled: true,
-      order: 7,
+      order: 6,
       title: 'Discover the Creative Collection for Spring & Summer 2026',
       description: 'Shop Custom Designs Across Fashion, Footwear, Home & Living, Gifts, and Decor. Enjoy Up to 40% Off on All Orders Over $50 – Perfect for the New Season!',
       backgroundImage: '/img/BannerCTA.jpg',
@@ -183,21 +192,21 @@ export const defaultContent: SiteContent = {
 
     featuredArticles: {
       enabled: true,
-      order: 8,
+      order: 7,
       title: 'Featured Articles',
       subtitle: 'Explore our curated articles on web development trends, tips, and design insights to stay informed and inspired.',
     },
 
     bestsellers: {
       enabled: true,
-      order: 9,
+      order: 8,
       title: 'Our Bestsellers',
       subtitle: 'Shop our most popular products that customers love',
     },
 
     faq: {
       enabled: true,
-      order: 10,
+      order: 9,
       title: 'Frequently Asked Questions',
       subtitle: 'Find answers to common questions about our products and services.',
       footerText: 'Still have questions? Our customer support team is here to help you 24/7',

@@ -1,0 +1,169 @@
+@use "../abstracts" as *;
+
+.faq-section {
+  width: 100%;
+  background-color: $c-background-dark;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.08), transparent 35%),
+    radial-gradient(circle at 85% 15%, rgba(255, 7, 58, 0.08), transparent 24%),
+    linear-gradient(180deg, #111111 0%, #0b0b0b 100%);
+  background-size: 220% 220%, 220% 220%, 100% 100%;
+  @include inline-animation(24s, infinite, 0, ease-in-out) {
+    0% {
+      background-position: 0% 0%, 0% 0%, 0% 0%;
+    }
+
+    50% {
+      background-position: 100% 0%, 0% 100%, 100% 100%;
+    }
+
+    100% {
+      background-position: 0% 0%, 0% 0%, 0% 0%;
+    }
+  }
+  border-top: 0.1rem solid rgba(255, 255, 255, 0.06);
+
+  &__container {
+    @extend %container;
+    padding: $section-padding-v 0;
+  }
+
+  &__header {
+    margin-bottom: 2rem;
+  }
+
+  &__title {
+    @extend %section-heading;
+    color: #fff;
+    font-size: clamp(2.4rem, 1rem + 2.4vw, 4rem);
+    max-width: 18ch;
+    margin: 0 auto;
+  }
+
+  &__list {
+    display: grid;
+    gap: 1rem;
+  }
+
+  &__item {
+    overflow: hidden;
+    border: 0.1rem solid rgba(255, 255, 255, 0.08);
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.04);
+    box-shadow: 0 1.5rem 3.5rem rgba(0, 0, 0, 0.2);
+    transition:
+      border-color 0.2s ease,
+      background-color 0.2s ease,
+      transform 0.2s ease;
+
+    &--open {
+      border-color: rgba(255, 7, 58, 0.45);
+      background: rgba(255, 255, 255, 0.07);
+      transform: translateY(-0.05rem);
+    }
+  }
+
+  &__question {
+    width: 100%;
+    padding: 1.2rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border: 0;
+    background: transparent;
+    color: #fff;
+    text-align: left;
+    font-size: clamp(1rem, 1.2vw, 1.08rem);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+
+    &:focus-visible {
+      outline: 0.16rem solid rgba(255, 7, 58, 0.38);
+      outline-offset: -0.16rem;
+    }
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    span:first-child {
+      flex: 1;
+    }
+
+    &--open {
+      .faq-section__icon {
+        transform: rotate(180deg) scale(1.05);
+        background: rgba(255, 7, 58, 0.2);
+      }
+    }
+  }
+
+  &__icon {
+    flex: 0 0 auto;
+    width: 2rem;
+    height: 2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: rgba(255, 7, 58, 0.12);
+    color: $c-red;
+    font-size: 1.25rem;
+    line-height: 1;
+    transition:
+      transform 0.35s ease,
+      background-color 0.35s ease;
+  }
+
+  &__answer {
+    display: grid;
+    grid-template-rows: 0fr;
+    padding: 0 1.25rem;
+    opacity: 0;
+    transform: translateY(-0.35rem);
+    transition:
+      grid-template-rows 0.35s ease,
+      opacity 0.3s ease,
+      transform 0.35s ease,
+      padding 0.35s ease;
+    color: $c-text-gray;
+    font-size: $text-md;
+    line-height: 1.8;
+
+    &--open {
+      grid-template-rows: 1fr;
+      padding: 0 1.25rem 1.2rem;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    &-inner {
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    p {
+      margin: 0;
+      max-width: 70rem;
+    }
+  }
+}
+
+@include respond-to("medium") {
+  .faq-section {
+    &__question {
+      padding: 1.35rem 1.5rem;
+    }
+
+    &__answer {
+      padding: 0 1.5rem;
+
+      &--open {
+        padding: 0 1.5rem 1.35rem;
+      }
+    }
+  }
+}

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image, { type StaticImageData } from "next/image";
+import type { SimpleSectionContent } from "src/data/defaultContent";
 import type { BackendCategory } from "src/types/backend";
 import { getPathString } from "src/utils";
 
@@ -17,6 +18,7 @@ type CategorySectionItem = BackendCategory & {
 
 interface GenderSectionProps {
   categories: CategorySectionItem[];
+  content: SimpleSectionContent;
 }
 
 function resolveCategoryImage(
@@ -40,7 +42,9 @@ function resolveCategoryImage(
   return value;
 }
 
-export default function GenderSection({ categories }: GenderSectionProps) {
+export default function GenderSection({ categories, content }: GenderSectionProps) {
+  if (!content.enabled) return null;
+
   const categoryBlocks = categorySectionBlocks.map((fallbackBlock, index) => {
     const category = [...categories]
       .filter((item) => (item.name || "").trim())
@@ -71,9 +75,7 @@ export default function GenderSection({ categories }: GenderSectionProps) {
             src={bannerImage}
           />
           <h3 className="gender__text-overlay">
-            Shop By
-            <br />
-            Category
+            {content.title}
           </h3>
         </div>
         <div className="gender__grid">
