@@ -65,6 +65,10 @@ function splitSecondaryText(description: string) {
   };
 }
 
+function stripHtml(html: string) {
+  return String(html || "").replace(/<[^>]*>/g, "").trim();
+}
+
 export default function HeroBanner() {
   const [slides, setSlides] = useState<HeroSlide[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,8 +96,8 @@ export default function HeroBanner() {
 
         const normalized = heroSlides
           .map((slide: BackendHeroSlide) => {
-            const title = String(slide?.title || "").trim();
-            const description = String(slide?.description || "").trim();
+            const title = stripHtml(String(slide?.title || "")).trim();
+            const description = stripHtml(String(slide?.description || "")).trim();
             const imagePath = String(slide?.image || "").trim();
             const imageSrc = getImageSource(imagePath);
             const order = Number((slide as any)?.order || 0) || 0;
@@ -104,7 +108,7 @@ export default function HeroBanner() {
 
             return {
               order,
-              type: String(slide?.type || "").trim() || title,
+              type: stripHtml(String(slide?.type || "")) || title,
               secondary: splitSecondaryText(description),
               title,
               imageSrc,

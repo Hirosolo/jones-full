@@ -535,15 +535,7 @@ function HeroSliderManagement({
         <label>Section Enabled</label>
         <button className={`admin-toggle ${enabled ? 'enabled' : ''}`} onClick={() => onEnabledChange(!enabled)} />
       </div>
-      <div className='admin-field'>
-        <label>Display Order</label>
-        <input
-          type='number'
-          className='admin-order-input'
-          value={order}
-          onChange={e => onOrderChange(parseInt(e.target.value) || 1)}
-        />
-      </div>
+      
 
       <h3 style={{ marginTop: '1.5rem' }}>Slides</h3>
       {loading ? (
