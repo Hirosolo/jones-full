@@ -10,6 +10,7 @@ import os
 from functools import wraps
 
 from django.conf import settings
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -21,27 +22,27 @@ from utils.models import HomeSlider
 
 DEFAULT_HERO_SLIDES = [
     {
-        'title': 'Discover. Design. Define Your Style',
-        'description': 'Premium trending products with worldwide shipping',
-        'buttonText': 'SHOP NOW',
-        'image': '/img/hero-slide-1.png',
-        'link': '/c/',
+        'title': 'collections',
+        'description': 'exclusive premium apparel',
+        'buttonText': 'buy yours',
+        'image': '/assets/images/acdc-hoodie-banner.webp',
+        'link': '/category/clothing',
         'order': 1,
     },
     {
-        'title': 'New Arrivals',
-        'description': 'Explore the latest collection of fashion, accessories & home decor',
-        'buttonText': 'EXPLORE',
-        'image': '/img/hero-slide-2.png',
-        'link': '/c/',
+        'title': 'accessories',
+        'description': 'new arrivals',
+        'buttonText': 'buy yours',
+        'image': '/assets/images/starWar-cup-banner.webp',
+        'link': '/category/accessories',
         'order': 2,
     },
     {
-        'title': 'Premium Quality',
-        'description': 'Custom-designed products made just for you',
-        'buttonText': 'DISCOVER',
-        'image': '/img/hero-slide-3.png',
-        'link': '/c/',
+        'title': 'home decor',
+        'description': 'vintage aesthetic',
+        'buttonText': 'buy yours',
+        'image': '/assets/images/monsterEnergy-cap-banner.webp',
+        'link': '/category/home-decor',
         'order': 3,
     },
 ]
@@ -101,13 +102,13 @@ def _normalize_hero_slide(slide, fallback_order):
     }
 
 
-def _serialize_home_slider(obj):
+def _serialize_home_slider(obj, include_id=False):
     image_name = getattr(obj.image, 'name', '') or ''
     image_url = image_name
     if not image_url and obj.image and hasattr(obj.image, 'url'):
         image_url = obj.image.url
 
-    return {
+    slide = {
         'title': obj.title,
         'description': obj.desc_safe or obj.desc or '',
         'buttonText': obj.button_text or '',
@@ -116,6 +117,24 @@ def _serialize_home_slider(obj):
         'order': obj.order,
         'status': obj.status,
     }
+    if include_id:
+        slide['id'] = obj.id
+    return slide
+
+
+def _get_hero_sliders_queryset(include_inactive=False):
+    queryset = HomeSlider.objects.all()
+    if not include_inactive:
+        queryset = queryset.filter(status=True)
+    return queryset.order_by('order', 'id')
+
+
+def _hero_slide_request_payload(data):
+    if isinstance(data, dict) and isinstance(data.get('slide'), dict):
+        return data['slide']
+    if isinstance(data, dict):
+        return data
+    return {}
 
 
 def _sync_home_slider_rows(slides):
@@ -140,24 +159,111 @@ def _sync_home_slider_rows(slides):
 
 
 def _resolve_home_hero(payload):
-    sliders = list(HomeSlider.objects.filter(status=True).order_by('order', 'id'))
-    if not sliders:
-        fallback = []
-        if isinstance(payload, dict):
-          fallback = (
-              payload.get('home', {})
-              .get('hero', {})
-              .get('defaultSlides', [])
-          )
-        slides_to_seed = fallback if fallback else DEFAULT_HERO_SLIDES
-        _sync_home_slider_rows(slides_to_seed)
-        sliders = list(HomeSlider.objects.filter(status=True).order_by('order', 'id'))
+    sliders = list(_get_hero_sliders_queryset(include_inactive=True))
+    if sliders:
+        return {
+            'enabled': True,
+            'order': 1,
+            'defaultSlides': [_serialize_home_slider(slider) for slider in sliders],
+        }
+
+    hero_payload = None
+    if isinstance(payload, dict):
+        home = payload.get('home') if isinstance(payload.get('home'), dict) else {}
+        hero_candidate = home.get('hero') if isinstance(home, dict) else {}
+        if isinstance(hero_candidate, dict) and 'defaultSlides' in hero_candidate:
+            hero_payload = hero_candidate
+
+    if isinstance(hero_payload, dict):
+        normalized_slides = []
+        for index, slide in enumerate(hero_payload.get('defaultSlides') or [], start=1):
+            item = _normalize_hero_slide(slide, index)
+            if item:
+                normalized_slides.append({
+                    'title': item['title'],
+                    'description': item['description'],
+                    'buttonText': item['button_text'],
+                    'image': item['image'],
+                    'link': item['link'],
+                    'order': item['order'],
+                })
+
+        if normalized_slides:
+            return {
+                'enabled': hero_payload.get('enabled', True),
+                'order': hero_payload.get('order', 1),
+                'defaultSlides': normalized_slides,
+            }
 
     return {
         'enabled': True,
         'order': 1,
-        'defaultSlides': [_serialize_home_slider(slider) for slider in sliders],
+        'defaultSlides': [],
     }
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([AllowAny])
+@admin_api_key_required
+def hero_slider_list_view(request):
+    if request.method == 'GET':
+        sliders = list(_get_hero_sliders_queryset())
+        return Response({
+            'total': len(sliders),
+            'items': [_serialize_home_slider(slider, include_id=True) for slider in sliders],
+        })
+
+    payload = _hero_slide_request_payload(request.data)
+    item = _normalize_hero_slide(payload, HomeSlider.objects.count() + 1)
+    if not item:
+        return Response({'error': 'Invalid hero slide payload.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    slider = HomeSlider.objects.create(
+        title=item['title'],
+        desc=item['description'],
+        desc_safe=item['description'],
+        image=item['image'] or '/img/hero-banner-default.png',
+        link=item['link'],
+        button_text=item['button_text'],
+        order=item['order'],
+        status=bool(payload.get('status', True)),
+    )
+
+    return Response(
+        {'success': True, 'item': _serialize_home_slider(slider, include_id=True)},
+        status=status.HTTP_201_CREATED,
+    )
+
+
+@api_view(['GET', 'PATCH', 'POST', 'DELETE'])
+@permission_classes([AllowAny])
+@admin_api_key_required
+def hero_slider_detail_view(request, slide_id):
+    slider = get_object_or_404(HomeSlider, pk=slide_id)
+
+    if request.method == 'GET':
+        return Response({'item': _serialize_home_slider(slider, include_id=True)})
+
+    if request.method == 'DELETE':
+        slider.delete()
+        return Response({'success': True})
+
+    payload = _hero_slide_request_payload(request.data)
+    item = _normalize_hero_slide(payload, slider.order or 1)
+    if not item:
+        return Response({'error': 'Invalid hero slide payload.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    slider.title = item['title']
+    slider.desc = item['description']
+    slider.desc_safe = item['description']
+    slider.image = item['image'] or '/img/hero-banner-default.png'
+    slider.link = item['link']
+    slider.button_text = item['button_text']
+    slider.order = item['order']
+    slider.status = bool(payload.get('status', slider.status))
+    slider.save()
+
+    return Response({'success': True, 'item': _serialize_home_slider(slider, include_id=True)})
 
 
 @api_view(['GET'])
@@ -191,8 +297,8 @@ def cms_content_set_view(request):
     obj.save()
 
     hero = payload.get('home', {}).get('hero', {}) if isinstance(payload.get('home'), dict) else {}
-    slides = hero.get('defaultSlides', []) if isinstance(hero, dict) else []
-    _sync_home_slider_rows(slides)
+    if isinstance(hero, dict) and 'defaultSlides' in hero:
+        _sync_home_slider_rows(hero.get('defaultSlides', []))
 
     return Response({'success': True, 'updated_at': obj.updated_at.isoformat()})
 
@@ -265,7 +371,7 @@ def cms_content_section_set_view(request, section_path):
 
     _write_nested(payload, segments, value)
 
-    if segments == ['hero'] and isinstance(value, dict):
+    if segments == ['hero'] and isinstance(value, dict) and 'defaultSlides' in value:
         _sync_home_slider_rows(value.get('defaultSlides', []))
 
     obj.payload = payload

@@ -218,15 +218,15 @@ async function deleteLocalMedia(url: string) {
 async function getBackendContent(): Promise<SiteContent> {
   const response = await fetch(`${DJANGO_BASE_URL}/api/shop/cms/site-content/`, { cache: 'no-store' })
   if (!response.ok) {
-    return { ...defaultContent }
+    return stripAdminHeroSlides({ ...defaultContent })
   }
 
   const saved = (await response.json()) as Partial<SiteContent> | Record<string, never>
   if (!saved || Object.keys(saved).length === 0) {
-    return { ...defaultContent }
+    return stripAdminHeroSlides({ ...defaultContent })
   }
 
-  return deepMerge(defaultContent, saved as Partial<SiteContent>)
+  return stripAdminHeroSlides(deepMerge(defaultContent, saved as Partial<SiteContent>))
 }
 
 async function saveBackendContent(content: SiteContent) {
@@ -324,6 +324,15 @@ function backendAdminPath(pathSegments: string[], method: string): string | null
       : prefix('articles/admin-article-categories/')
   }
 
+  if (section === 'hero-slides') {
+    if (id) {
+      if (method === 'GET') return prefix(`shop/cms/hero-slides/${id}/`)
+      if (method === 'DELETE') return prefix(`shop/cms/hero-slides/${id}/`)
+      if (method === 'PATCH' || method === 'POST') return prefix(`shop/cms/hero-slides/${id}/`)
+    }
+    return prefix('shop/cms/hero-slides/')
+  }
+
   return null
 }
 
@@ -378,6 +387,19 @@ async function proxyToBackend(req: NextApiRequest, res: NextApiResponse, pathSeg
   return res.json(body)
 }
 
+function stripAdminHeroSlides(content: SiteContent): SiteContent {
+  return {
+    ...content,
+    home: {
+      ...content.home,
+      hero: {
+        ...content.home.hero,
+        defaultSlides: [],
+      },
+    },
+  }
+}
+
 export const config = {
   api: {
     bodyParser: false,
@@ -421,9 +443,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (req.method === 'GET') {
       try {
         const content = await getBackendContent()
-        return res.status(200).json(content)
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+        res.setHeader('Pragma', 'no-cache')
+        console.log('[admin content] loaded', { heroSlides: content.home.hero.defaultSlides.length })
+          return res.status(200).json(stripAdminHeroSlides(content))
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to load content'
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+        res.setHeader('Pragma', 'no-cache')
         return res.status(500).json({ error: message })
       }
     }
@@ -437,12 +464,54 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         const current = await getBackendContent()
         const updated = deepMerge(current, body as Partial<SiteContent>)
-        await saveBackendContent(updated)
+        const payload = stripAdminHeroSlides(updated)
+        console.log('[admin content] save', { heroSlides: payload.home.hero.defaultSlides.length })
+        await saveBackendContent(payload)
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+        res.setHeader('Pragma', 'no-cache')
         return res.status(200).json({ success: true, message: 'Content updated successfully' })
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to save content'
         return res.status(500).json({ error: 'Failed to save content', detail: message })
       }
+    }
+  }
+
+  if (section === 'hero-slides') {
+    if (!isAuthenticated(req)) {
+      return res.status(401).json({ error: 'Unauthorized. Please log in to the admin panel.' })
+    }
+
+    const backendUrl = backendAdminPath(pathSegments, req.method || 'GET')
+    if (!backendUrl) {
+      return res.status(404).json({ error: 'Unsupported admin path' })
+    }
+
+    console.log('[admin hero-slides]', req.method, backendUrl)
+
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      'X-Admin-Key': ADMIN_API_KEY,
+    }
+    const options: RequestInit = { method: req.method, headers }
+
+    if (!['GET', 'HEAD'].includes(req.method || 'GET')) {
+      const body = await parseRequestBody(req)
+      options.body = JSON.stringify(body)
+    }
+
+    try {
+      const response = await fetch(backendUrl, options)
+      const text = await response.text()
+      res.status(response.status)
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+      res.setHeader('Pragma', 'no-cache')
+      res.setHeader('Content-Type', response.headers.get('content-type') || 'application/json')
+      return res.send(text)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Hero slide request failed'
+      return res.status(500).json({ error: message })
     }
   }
 
@@ -600,7 +669,16 @@ async function handleMissingAdminKey(req: NextApiRequest, res: NextApiResponse, 
   }
 
   if (section === 'content' && method === 'GET') {
-    return res.status(200).json({ ...defaultContent })
+    try {
+      const response = await fetch(`${DJANGO_BASE_URL}/api/shop/cms/site-content/`, { cache: 'no-store' })
+      if (!response.ok) {
+        return res.status(response.status).json({ error: 'Failed to load content' })
+      }
+      const data = await response.json()
+      return res.status(200).json(stripAdminHeroSlides(deepMerge(defaultContent, data as Partial<SiteContent>)))
+    } catch (error) {
+      return res.status(500).json({ error: 'Failed to load content' })
+    }
   }
 
   if (section === 'auth') {
@@ -653,5 +731,42 @@ async function parseRequestBody(req: NextApiRequest): Promise<any> {
     return JSON.parse(text)
   } catch {
     return {}
+  }
+  if (section === 'hero-slides') {
+    if (!isAuthenticated(req)) {
+      return res.status(401).json({ error: 'Unauthorized. Please log in to the admin panel.' })
+    }
+
+    const backendUrl = backendAdminPath(pathSegments, req.method || 'GET')
+    if (!backendUrl) {
+      return res.status(404).json({ error: 'Unsupported admin path' })
+    }
+
+    console.log('[admin hero-slides]', req.method, backendUrl)
+
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      'X-Admin-Key': ADMIN_API_KEY,
+    }
+    const options: RequestInit = { method: req.method, headers }
+
+    if (!['GET', 'HEAD'].includes(req.method || 'GET')) {
+      const body = await parseRequestBody(req)
+      options.body = JSON.stringify(body)
+    }
+
+    try {
+      const response = await fetch(backendUrl, options)
+      const text = await response.text()
+      res.status(response.status)
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+      res.setHeader('Pragma', 'no-cache')
+      res.setHeader('Content-Type', response.headers.get('content-type') || 'application/json')
+      return res.send(text)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Hero slide request failed'
+      return res.status(500).json({ error: message })
+    }
   }
 }

@@ -350,6 +350,272 @@ function slugifyForPreview (input: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
+function stripHeroSlidesFromContent(content: SiteContent): SiteContent {
+  return {
+    ...content,
+    home: {
+      ...content.home,
+      hero: {
+        ...content.home.hero,
+        defaultSlides: [],
+      },
+    },
+  }
+}
+
+interface HeroSlideRecord extends HeroSlide {
+  id: number
+  status: boolean
+}
+
+function HeroSliderManagement({
+  enabled,
+  order,
+  onEnabledChange,
+  onOrderChange,
+  showToast,
+}: {
+  enabled: boolean
+  order: number
+  onEnabledChange: (value: boolean) => void
+  onOrderChange: (value: number) => void
+  showToast: (message: string, type: 'success' | 'error') => void
+}) {
+  const [slides, setSlides] = useState<HeroSlideRecord[]>([])
+  const [loading, setLoading] = useState(true)
+  const [savingId, setSavingId] = useState<number | null>(null)
+  const [creating, setCreating] = useState(false)
+
+  const triggerRevalidate = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/revalidate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paths: ['/', '/c', '/b', '/t'],
+          tags: ['cms-content'],
+        }),
+      })
+      console.log('[admin hero-slides] revalidate', res.status)
+    } catch (error) {
+      console.log('[admin hero-slides] revalidate error', error)
+    }
+  }, [])
+
+  const loadSlides = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/admin/hero-slides', { cache: 'no-store' })
+      const data = await res.json().catch(() => ({}))
+      console.log('[admin hero-slides] load', data)
+      const items = Array.isArray(data.items) ? data.items : []
+      setSlides(items.map((item: any) => ({
+        id: Number(item.id),
+        title: String(item.title || ''),
+        description: String(item.description || ''),
+        buttonText: String(item.buttonText || ''),
+        image: String(item.image || ''),
+        link: String(item.link || '/'),
+        order: Number(item.order || 1),
+        status: item.status !== false,
+      })))
+    } catch (error) {
+      console.log('[admin hero-slides] load error', error)
+      showToast('Failed to load hero slides', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }, [showToast])
+
+  useEffect(() => {
+    loadSlides()
+  }, [loadSlides])
+
+  const updateSlide = (id: number, field: keyof HeroSlideRecord, value: string | number | boolean) => {
+    setSlides(prev => prev.map(slide => (slide.id === id ? { ...slide, [field]: value } : slide)))
+  }
+
+  const handleCreate = async () => {
+    setCreating(true)
+    try {
+      const payload = {
+        slide: {
+          title: 'New Slide',
+          description: 'Text below title',
+          buttonText: 'SHOP NOW',
+          image: '/img/hero-banner-default.png',
+          link: '/c/',
+          order: slides.length + 1,
+          status: true,
+        },
+      }
+      console.log('[admin hero-slides] create', payload)
+      const res = await fetch('/api/admin/hero-slides', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'Failed to create hero slide')
+      await loadSlides()
+      await triggerRevalidate()
+      showToast('Hero slide created', 'success')
+    } catch (error: any) {
+      console.log('[admin hero-slides] create error', error)
+      showToast(error.message || 'Failed to create hero slide', 'error')
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  const handleSave = async (slide: HeroSlideRecord) => {
+    setSavingId(slide.id)
+    try {
+      const payload = {
+        slide: {
+          title: slide.title,
+          description: slide.description,
+          buttonText: slide.buttonText,
+          image: slide.image,
+          link: slide.link,
+          order: Number(slide.order) || 1,
+          status: slide.status,
+        },
+      }
+      console.log('[admin hero-slides] save', slide.id, payload)
+      const res = await fetch(`/api/admin/hero-slides/${slide.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'Failed to update hero slide')
+      await loadSlides()
+      await triggerRevalidate()
+      showToast('Hero slide saved', 'success')
+    } catch (error: any) {
+      console.log('[admin hero-slides] save error', error)
+      showToast(error.message || 'Failed to save hero slide', 'error')
+    } finally {
+      setSavingId(null)
+    }
+  }
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Delete this hero slide?')) return
+    try {
+      console.log('[admin hero-slides] delete', id)
+      const res = await fetch(`/api/admin/hero-slides/${id}`, { method: 'DELETE' })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'Failed to delete hero slide')
+      await loadSlides()
+      await triggerRevalidate()
+      showToast('Hero slide deleted', 'success')
+    } catch (error: any) {
+      console.log('[admin hero-slides] delete error', error)
+      showToast(error.message || 'Failed to delete hero slide', 'error')
+    }
+  }
+
+  return (
+    <div>
+      <div className='admin-toggle-row'>
+        <label>Section Enabled</label>
+        <button className={`admin-toggle ${enabled ? 'enabled' : ''}`} onClick={() => onEnabledChange(!enabled)} />
+      </div>
+      <div className='admin-field'>
+        <label>Display Order</label>
+        <input
+          type='number'
+          className='admin-order-input'
+          value={order}
+          onChange={e => onOrderChange(parseInt(e.target.value) || 1)}
+        />
+      </div>
+
+      <h3 style={{ marginTop: '1.5rem' }}>Slides</h3>
+      {loading ? (
+        <p>Loading hero slides...</p>
+      ) : slides.length === 0 ? (
+        <div className='admin-empty-state'>
+          <p>No hero slides found.</p>
+          <button className='admin-btn-add' onClick={handleCreate} disabled={creating}>
+            {creating ? 'Creating...' : '+ Add Slide'}
+          </button>
+        </div>
+      ) : (
+        slides.map((slide, index) => (
+          <div key={slide.id} className='admin-list-item'>
+            <div className='admin-list-item-header'>
+              <span className='admin-list-item-number'>Slide {index + 1}</span>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button className='admin-btn-outline' onClick={() => handleSave(slide)} disabled={savingId === slide.id}>
+                  {savingId === slide.id ? 'Saving...' : 'Save Slide'}
+                </button>
+                <button className='admin-btn-remove' onClick={() => handleDelete(slide.id)}>
+                  ✕ Remove
+                </button>
+              </div>
+            </div>
+            <div className='admin-field-row'>
+              <div className='admin-field'>
+                <label>Title</label>
+                <input value={slide.title} onChange={e => updateSlide(slide.id, 'title', e.target.value)} />
+              </div>
+              <div className='admin-field'>
+                <label>Order</label>
+                <input
+                  type='number'
+                  value={slide.order}
+                  onChange={e => updateSlide(slide.id, 'order', parseInt(e.target.value) || 1)}
+                />
+              </div>
+              <div className='admin-field'>
+                <label>Status</label>
+                <button
+                  type='button'
+                  className={`admin-toggle ${slide.status ? 'enabled' : ''}`}
+                  onClick={() => updateSlide(slide.id, 'status', !slide.status)}
+                />
+              </div>
+            </div>
+            <div className='admin-field'>
+              <label>Text below title</label>
+              <textarea
+                value={slide.description}
+                placeholder='Text shown under the slide title'
+                onChange={e => updateSlide(slide.id, 'description', e.target.value)}
+                rows={2}
+              />
+            </div>
+            <div className='admin-field-row'>
+              <div className='admin-field'>
+                <label>Button Text</label>
+                <input value={slide.buttonText} onChange={e => updateSlide(slide.id, 'buttonText', e.target.value)} />
+              </div>
+              <div className='admin-field'>
+                <label>Button Link</label>
+                <input value={slide.link} onChange={e => updateSlide(slide.id, 'link', e.target.value)} />
+              </div>
+            </div>
+            <ImageUploader
+              currentUrl={slide.image}
+              onUpload={url => updateSlide(slide.id, 'image', url)}
+              label='Slide Image'
+            />
+          </div>
+        ))
+      )}
+
+      {!loading && slides.length > 0 && (
+        <button className='admin-btn-add' onClick={handleCreate} disabled={creating}>
+          {creating ? 'Creating...' : '+ Add Slide'}
+        </button>
+      )}
+    </div>
+  )
+}
+
 function ProductManagement({ showToast }: { showToast: (msg: string, type: 'success' | 'error') => void }) {
   const [products, setProducts] = useState<ProductItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -2860,7 +3126,7 @@ export default function AdminPage() {
   const [password, setPassword] = useState('')
   const [loginError, setLoginError] = useState('')
   const [loginLoading, setLoginLoading] = useState(false)
-  const [content, setContent] = useState<SiteContent>(defaultContent)
+  const [content, setContent] = useState<SiteContent>(stripHeroSlidesFromContent(defaultContent))
   const [activeSection, setActiveSection] = useState<SectionKey>('seo')
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
@@ -2883,10 +3149,10 @@ export default function AdminPage() {
           return
         }
         // Session is valid — load content
-        const contentRes = await fetch('/api/admin/content')
+        const contentRes = await fetch('/api/admin/content', { cache: 'no-store' })
         if (contentRes.ok) {
           const data = await contentRes.json()
-          setContent({ ...defaultContent, ...data, productSeo: data.productSeo || [] })
+          setContent(stripHeroSlidesFromContent({ ...defaultContent, ...data, productSeo: data.productSeo || [] }))
         }
         setIsAuth(true)
       } catch {
@@ -2919,9 +3185,9 @@ export default function AdminPage() {
         throw new Error(data.error || 'Login failed')
       }
       // Load content
-      const contentRes = await fetch('/api/admin/content')
+      const contentRes = await fetch('/api/admin/content', { cache: 'no-store' })
       const contentData = await contentRes.json()
-      setContent({ ...defaultContent, ...contentData, productSeo: contentData.productSeo || [] })
+      setContent(stripHeroSlidesFromContent({ ...defaultContent, ...contentData, productSeo: contentData.productSeo || [] }))
       setIsAuth(true)
     } catch (err: any) {
       setLoginError(err.message || 'Login failed')
@@ -2944,10 +3210,21 @@ export default function AdminPage() {
       // Products/brands/tags/articles live in Django now — the Blob only
       // holds home/footer/seo/menu state, so no read-modify-write merge
       // against sibling fields is needed here.
+      const payload = {
+        ...content,
+        home: {
+          ...content.home,
+          hero: {
+            enabled: content.home.hero.enabled,
+            order: content.home.hero.order,
+          },
+        },
+      }
+      console.log('[admin content] submit payload', { heroSlides: content.home.hero.defaultSlides.length })
       const res = await fetch('/api/admin/content', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(content),
+        body: JSON.stringify(payload),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({} as any))
@@ -3194,108 +3471,14 @@ export default function AdminPage() {
           {/* Hero Section */}
           {activeSection === 'hero' && (
             <div className='admin-section-card'>
-              <h3>Hero Slider</h3>
-              <div className='admin-toggle-row'>
-                <label>Section Enabled</label>
-                <button
-                  className={`admin-toggle ${content.home.hero.enabled ? 'enabled' : ''}`}
-                  onClick={() => updateHomeSection('hero', 'enabled', !content.home.hero.enabled)}
+                <h3>Hero Slider</h3>
+                <HeroSliderManagement
+                  enabled={content.home.hero.enabled}
+                  order={content.home.hero.order}
+                  onEnabledChange={value => updateHomeSection('hero', 'enabled', value)}
+                  onOrderChange={value => updateHomeSection('hero', 'order', value)}
+                  showToast={showToast}
                 />
-              </div>
-              <div className='admin-field'>
-                <label>Display Order</label>
-                <input
-                  type='number'
-                  className='admin-order-input'
-                  value={content.home.hero.order}
-                  onChange={e => updateHomeSection('hero', 'order', parseInt(e.target.value) || 1)}
-                />
-              </div>
-              <h3 style={{ marginTop: '1.5rem' }}>Slides</h3>
-              {content.home.hero.defaultSlides.map((slide, i) => (
-                <div key={i} className='admin-list-item'>
-                  <div className='admin-list-item-header'>
-                    <span className='admin-list-item-number'>Slide {i + 1}</span>
-                    {content.home.hero.defaultSlides.length > 1 && (
-                      <button
-                        className='admin-btn-remove'
-                        onClick={() => {
-                          const slides = [...content.home.hero.defaultSlides]
-                          slides.splice(i, 1)
-                          updateHomeSection('hero', 'defaultSlides', slides)
-                        }}
-                      >
-                        ✕ Remove
-                      </button>
-                    )}
-                  </div>
-                  <div className='admin-field'>
-                    <label>Title</label>
-                    <input
-                      value={slide.title}
-                      onChange={e => {
-                        const slides = [...content.home.hero.defaultSlides]
-                        slides[i] = { ...slides[i], title: e.target.value }
-                        updateHomeSection('hero', 'defaultSlides', slides)
-                      }}
-                    />
-                  </div>
-                  <div className='admin-field'>
-                    <label>Description</label>
-                    <textarea
-                      value={slide.description}
-                      onChange={e => {
-                        const slides = [...content.home.hero.defaultSlides]
-                        slides[i] = { ...slides[i], description: e.target.value }
-                        updateHomeSection('hero', 'defaultSlides', slides)
-                      }}
-                      rows={2}
-                    />
-                  </div>
-                  <div className='admin-field-row'>
-                    <div className='admin-field'>
-                      <label>Button Text</label>
-                      <input
-                        value={slide.buttonText}
-                        onChange={e => {
-                          const slides = [...content.home.hero.defaultSlides]
-                          slides[i] = { ...slides[i], buttonText: e.target.value }
-                          updateHomeSection('hero', 'defaultSlides', slides)
-                        }}
-                      />
-                    </div>
-                    <div className='admin-field'>
-                      <label>Button Link</label>
-                      <input
-                        value={slide.link}
-                        onChange={e => {
-                          const slides = [...content.home.hero.defaultSlides]
-                          slides[i] = { ...slides[i], link: e.target.value }
-                          updateHomeSection('hero', 'defaultSlides', slides)
-                        }}
-                      />
-                    </div>
-                  </div>
-                  <ImageUploader
-                    currentUrl={slide.image}
-                    onUpload={url => {
-                      const slides = [...content.home.hero.defaultSlides]
-                      slides[i] = { ...slides[i], image: url }
-                      updateHomeSection('hero', 'defaultSlides', slides)
-                    }}
-                    label='Slide Image'
-                  />
-                </div>
-              ))}
-              <button
-                className='admin-btn-add'
-                onClick={() => {
-                  const newSlide: HeroSlide = { title: 'New Slide', description: '', buttonText: 'SHOP NOW', image: '/img/hero-banner-default.png', link: '/c/' }
-                  updateHomeSection('hero', 'defaultSlides', [...content.home.hero.defaultSlides, newSlide])
-                }}
-              >
-                + Add Slide
-              </button>
             </div>
           )}
 
