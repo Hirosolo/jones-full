@@ -1950,14 +1950,16 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<BrandItem | null>(null)
   const [formData, setFormData] = useState<BrandFormData>(emptyBrandForm)
+  const [brandLeagueLock, setBrandLeagueLock] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState<number | null>(null)
   const [showGroupForm, setShowGroupForm] = useState(false)
   const [editingGroup, setEditingGroup] = useState<string | null>(null)
   const [groupName, setGroupName] = useState('')
-  const [groupFirstBrandName, setGroupFirstBrandName] = useState('')
   const [groupSubmitting, setGroupSubmitting] = useState(false)
   const [confirmingGroupDelete, setConfirmingGroupDelete] = useState<string | null>(null)
+
+  const deleteModalBrand = confirmingDelete != null ? brands.find(b => b.id === confirmingDelete) || null : null
 
   const fetchBrands = useCallback(async () => {
     setLoading(true)
@@ -2007,13 +2009,13 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
   const resetForm = () => {
     setFormData(emptyBrandForm)
     setEditing(null)
+    setBrandLeagueLock('')
     setShowForm(false)
   }
 
   const resetGroupForm = () => {
     setEditingGroup(null)
     setGroupName('')
-    setGroupFirstBrandName('')
     setShowGroupForm(false)
   }
 
@@ -2021,6 +2023,7 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
 
   const openCreateInGroup = (groupName: string) => {
     setEditing(null)
+    setBrandLeagueLock(groupName)
     setFormData({ ...emptyBrandForm, league: groupName })
     setShowForm(true)
     setExpandedGroup(groupName)
@@ -2029,7 +2032,6 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
   const openCreateNewGroup = () => {
     setEditingGroup(null)
     setGroupName('')
-    setGroupFirstBrandName('')
     setShowGroupForm(true)
   }
 
@@ -2055,11 +2057,25 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
     setEditingGroup(name)
     setGroupName(name)
     setExpandedGroup(name)
+    setShowGroupForm(true)
   }
 
   const sortedBrandGroups = React.useMemo(() => {
     return [...brandGroups].sort((left, right) => left.order - right.order || left.name.localeCompare(right.name))
   }, [brandGroups])
+
+  const deleteModalGroup = confirmingGroupDelete != null ? sortedBrandGroups.find(group => group.name === confirmingGroupDelete) || null : null
+
+  const brandLeagueOptions = React.useMemo(() => {
+    const options = new Set<string>()
+    for (const league of leagueOptions) {
+      options.add(league)
+    }
+    for (const group of sortedBrandGroups) {
+      options.add(group.name)
+    }
+    return Array.from(options).sort((left, right) => left.localeCompare(right))
+  }, [leagueOptions, sortedBrandGroups])
 
   const toggleGroup = (name: string) => {
     setExpandedGroup(prev => prev === name ? null : name)
@@ -2070,9 +2086,11 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
     setSubmitting(true)
     try {
       // newLeague (when "+ Add new" picked) takes priority.
-      const finalLeague = formData.league === '__new__'
-        ? formData.newLeague.trim()
-        : formData.league.trim()
+      const finalLeague = brandLeagueLock.trim() || (
+        formData.league === '__new__'
+          ? formData.newLeague.trim()
+          : formData.league.trim()
+      )
 
       const fd = new FormData()
       fd.append('name', formData.name.trim())
@@ -2088,7 +2106,7 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
       if (!res.ok) throw new Error(data.error || data.detail || 'Failed')
 
       showToast(data.message || (editing ? 'Brand updated!' : 'Brand created!'), 'success')
-      fetchBrands()
+      await Promise.all([fetchBrands(), fetchBrandGroups()])
       // Refresh the public-facing menu/listing so league regroups immediately.
       fetch('/api/admin/revalidate', {
         method: 'POST',
@@ -2114,19 +2132,10 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
       }
 
       if (!currentGroup) {
-        const firstBrandName = groupFirstBrandName.trim()
-        if (!firstBrandName) {
-          throw new Error('First brand name is required to create a new group')
-        }
-
-        const fd = new FormData()
-        fd.append('name', firstBrandName)
-        fd.append('league', nextGroup)
-        fd.append('order', '1')
-
-        const res = await fetch('/api/admin/brands', {
+        const res = await fetch('/api/admin/brand-groups', {
           method: 'POST',
-          body: fd,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: nextGroup }),
         })
         const data = await res.json().catch(() => ({}))
         if (!res.ok) throw new Error(data.error || data.detail || 'Failed')
@@ -2159,11 +2168,6 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
   }
 
   const handleDelete = async (b: BrandItem) => {
-    if (confirmingDelete !== b.id) {
-      setConfirmingDelete(b.id)
-      setTimeout(() => setConfirmingDelete(prev => prev === b.id ? null : prev), 5000)
-      return
-    }
     setConfirmingDelete(null)
     try {
       const res = await fetch(`/api/admin/brands/${b.id}`, { method: 'DELETE' })
@@ -2182,12 +2186,6 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
   }
 
   const handleGroupDelete = async (name: string) => {
-    if (confirmingGroupDelete !== name) {
-      setConfirmingGroupDelete(name)
-      setTimeout(() => setConfirmingGroupDelete(prev => prev === name ? null : prev), 5000)
-      return
-    }
-
     setConfirmingGroupDelete(null)
     try {
       const res = await fetch('/api/admin/brand-groups', {
@@ -2212,50 +2210,6 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
 
   return (
     <div>
-      {showGroupForm && !editingGroup && (
-        <div className='admin-section-card' style={{ marginBottom: '1.5rem', border: '1px solid rgba(96,165,250,0.22)' }}>
-          <form onSubmit={handleGroupSubmit}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
-              <div>
-                <h4 style={{ margin: 0 }}>{editingGroup ? 'Edit Brand Group' : 'Create Brand Group'}</h4>
-                <p style={{ margin: '0.25rem 0 0', fontSize: '0.8125rem', color: '#71717a' }}>
-                  {editingGroup
-                    ? 'Renaming a group updates the league for every brand inside it.'
-                    : 'Creating a group adds the first brand in that new league.'}
-                </p>
-              </div>
-              <button type='button' className='admin-btn-outline' onClick={resetGroupForm} style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>← Back</button>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '0.75rem', alignItems: 'end' }}>
-                <div className='admin-field' style={{ margin: 0 }}>
-                  <label>New Group Name</label>
-                  <input
-                    value={groupName}
-                    onChange={e => setGroupName(e.target.value)}
-                    placeholder='Enter new group name'
-                    required
-                  />
-                </div>
-                <div className='admin-field' style={{ margin: 0 }}>
-                  <label>First Brand Name</label>
-                  <input
-                    value={groupFirstBrandName}
-                    onChange={e => setGroupFirstBrandName(e.target.value)}
-                    placeholder='Enter the first brand in this group'
-                    required
-                  />
-                </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button type='submit' className='admin-btn-primary' disabled={groupSubmitting || !groupName.trim() || !groupFirstBrandName.trim()}>
-                    {groupSubmitting ? '⏳ Saving...' : '➕ Create Group'}
-                  </button>
-                  <button type='button' className='admin-btn-outline' onClick={resetGroupForm}>Cancel</button>
-                </div>
-            </div>
-          </form>
-        </div>
-      )}
-
       <div className='admin-section-card' style={{ marginBottom: '1.5rem', border: '1px solid rgba(96,165,250,0.22)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
           <div>
@@ -2330,11 +2284,11 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
                       )}
                       <button
                         className='admin-btn-remove'
-                        onClick={() => handleGroupDelete(group.name)}
-                        style={{ padding: '0.25rem 0.625rem', fontSize: '0.75rem', minWidth: confirmingGroupDelete === group.name ? 70 : undefined, background: confirmingGroupDelete === group.name ? '#dc2626' : undefined }}
+                        onClick={() => setConfirmingGroupDelete(group.name)}
+                        style={{ padding: '0.25rem 0.625rem', fontSize: '0.75rem' }}
                         title='Delete brand group by clearing the league on its brands'
                       >
-                        {confirmingGroupDelete === group.name ? '⚠️ Confirm?' : '🗑️'}
+                        🗑️
                       </button>
                       <span style={{ color: '#71717a', fontSize: '0.875rem', alignSelf: 'center' }}>{isExpanded ? 'Collapse' : 'Expand'}</span>
                     </div>
@@ -2393,8 +2347,8 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
                                   <td style={{ padding: '0.625rem 0.5rem', textAlign: 'right' }}>
                                     <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                                       <button className='admin-btn-outline' onClick={() => openEdit(currentBrand)} style={{ padding: '0.25rem 0.625rem', fontSize: '0.75rem' }}>✏️ Edit</button>
-                                      <button className='admin-btn-remove' onClick={() => handleDelete(currentBrand)} style={{ padding: '0.25rem 0.625rem', fontSize: '0.75rem', minWidth: confirmingDelete === currentBrand.id ? 70 : undefined, background: confirmingDelete === currentBrand.id ? '#dc2626' : undefined }}>
-                                        {confirmingDelete === currentBrand.id ? '⚠️ Confirm?' : '🗑️'}
+                                      <button className='admin-btn-remove' onClick={() => setConfirmingDelete(currentBrand.id)} style={{ padding: '0.25rem 0.625rem', fontSize: '0.75rem' }}>
+                                        🗑️
                                       </button>
                                     </div>
                                   </td>
@@ -2414,71 +2368,245 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
       </div>
 
       {showForm && (
-        <div className='admin-section-card' style={{ marginBottom: '1.5rem', border: '1px solid rgba(74,222,128,0.3)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h4 style={{ margin: 0 }}>{editing ? `✏️ Edit: ${editing.name}` : '➕ Create Brand'}</h4>
-            <button className='admin-btn-outline' onClick={resetForm} style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>← Back</button>
-          </div>
-          <form onSubmit={handleSubmit}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div className='admin-field'>
-                <label>Brand Name *</label>
-                <input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required autoFocus />
-              </div>
-              <div className='admin-field'>
-                <label>Display Order</label>
-                <input type='number' min='0' value={formData.order} onChange={e => setFormData({ ...formData, order: e.target.value })} />
-              </div>
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1000,
+            background: 'rgba(9, 9, 11, 0.72)',
+            backdropFilter: 'blur(10px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+          }}
+          onClick={resetForm}
+        >
+          <div
+            className='admin-section-card'
+            style={{
+              width: 'min(860px, 100%)',
+              maxHeight: 'calc(100vh - 2rem)',
+              overflowY: 'auto',
+              border: '1px solid rgba(74,222,128,0.3)',
+              marginBottom: 0,
+              boxShadow: '0 30px 80px rgba(0,0,0,0.45)',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', gap: '1rem' }}>
+              <h4 style={{ margin: 0 }}>{editing ? `✏️ Edit Brand: ${editing.name}` : '➕ Create Brand'}</h4>
+              <button className='admin-btn-outline' onClick={resetForm} style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>✕</button>
             </div>
+            <form onSubmit={handleSubmit}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className='admin-field'>
+                  <label>Brand Name *</label>
+                  <input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required autoFocus />
+                </div>
+                <div className='admin-field'>
+                  <label>Display Order</label>
+                  <input type='number' min='0' value={formData.order} onChange={e => setFormData({ ...formData, order: e.target.value })} />
+                </div>
+              </div>
 
-            <div className='admin-field' style={{ marginTop: '0.75rem' }}>
-              <label>Group / League (Sport, Rock Band, Music, Movie, Culture, Business...)</label>
-              <select
-                value={formData.league}
-                onChange={e => setFormData({ ...formData, league: e.target.value })}
-              >
-                <option value=''>— None —</option>
-                {leagueOptions.map(l => (
-                  <option key={l} value={l}>{l}</option>
-                ))}
-                <option value='__new__'>➕ Add new group...</option>
-              </select>
-              {formData.league === '__new__' && (
+              <div className='admin-field' style={{ marginTop: '0.75rem' }}>
+                <label>Group / League (Sport, Rock Band, Music, Movie, Culture, Business...)</label>
+                {brandLeagueLock ? (
+                  <>
+                    <div style={{ padding: '0.75rem 0.85rem', borderRadius: '0.5rem', border: '1px solid rgba(96,165,250,0.35)', background: 'rgba(30,58,95,0.35)', color: '#dbeafe', fontWeight: 600 }}>
+                      {brandLeagueLock}
+                    </div>
+                    <input type='hidden' value={brandLeagueLock} readOnly />
+                    <p style={{ fontSize: '0.75rem', color: '#a1a1aa', margin: '0.25rem 0 0' }}>
+                      This brand will be created inside the selected group.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <select
+                      value={formData.league}
+                      onChange={e => setFormData({ ...formData, league: e.target.value })}
+                    >
+                      <option value=''>— None —</option>
+                      {brandLeagueOptions.map(l => (
+                        <option key={l} value={l}>{l}</option>
+                      ))}
+                      <option value='__new__'>➕ Add new group...</option>
+                    </select>
+                    {formData.league === '__new__' && (
+                      <input
+                        style={{ marginTop: '0.5rem' }}
+                        placeholder='Enter new group name (e.g. Anime, Sport, Music)'
+                        value={formData.newLeague}
+                        onChange={e => setFormData({ ...formData, newLeague: e.target.value })}
+                        required
+                      />
+                    )}
+                    <p style={{ fontSize: '0.75rem', color: '#a1a1aa', margin: '0.25rem 0 0' }}>
+                      Group quyết định cột brand sẽ xuất hiện trong header mega-menu.
+                    </p>
+                  </>
+                )}
+              </div>
+
+              <div className='admin-field' style={{ marginTop: '0.75rem' }}>
+                <label>Logo URL</label>
                 <input
-                  style={{ marginTop: '0.5rem' }}
-                  placeholder='Enter new group name (e.g. Anime, Sport, Music)'
-                  value={formData.newLeague}
-                  onChange={e => setFormData({ ...formData, newLeague: e.target.value })}
-                  required
+                  type='url'
+                  placeholder='https://example.com/logo.png'
+                  value={formData.logo_url}
+                  onChange={e => setFormData({ ...formData, logo_url: e.target.value })}
                 />
-              )}
-              <p style={{ fontSize: '0.75rem', color: '#a1a1aa', margin: '0.25rem 0 0' }}>
-                Group quyết định cột brand sẽ xuất hiện trong header mega-menu.
-              </p>
-            </div>
+              </div>
 
-            <div className='admin-field' style={{ marginTop: '0.75rem' }}>
-              <label>Logo URL</label>
-              <input
-                type='url'
-                placeholder='https://example.com/logo.png'
-                value={formData.logo_url}
-                onChange={e => setFormData({ ...formData, logo_url: e.target.value })}
-              />
-            </div>
+              <div className='admin-field' style={{ marginTop: '0.75rem' }}>
+                <label>Description (HTML for SEO)</label>
+                <textarea value={formData.desc} onChange={e => setFormData({ ...formData, desc: e.target.value })} rows={3} />
+              </div>
 
-            <div className='admin-field' style={{ marginTop: '0.75rem' }}>
-              <label>Description (HTML for SEO)</label>
-              <textarea value={formData.desc} onChange={e => setFormData({ ...formData, desc: e.target.value })} rows={3} />
-            </div>
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+                <button type='submit' className='admin-btn-primary' disabled={submitting || !formData.name.trim()}>
+                  {submitting ? '⏳ Saving...' : editing ? '💾 Update Brand' : '➕ Create Brand'}
+                </button>
+                <button type='button' className='admin-btn-outline' onClick={resetForm}>Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
+      {showGroupForm && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1000,
+            background: 'rgba(9, 9, 11, 0.72)',
+            backdropFilter: 'blur(10px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+          }}
+          onClick={resetGroupForm}
+        >
+          <div
+            className='admin-section-card'
+            style={{
+              width: 'min(760px, 100%)',
+              maxHeight: 'calc(100vh - 2rem)',
+              overflowY: 'auto',
+              border: '1px solid rgba(96,165,250,0.22)',
+              marginBottom: 0,
+              boxShadow: '0 30px 80px rgba(0,0,0,0.45)',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
+              <div>
+                <h4 style={{ margin: 0 }}>{editingGroup ? '✏️ Edit Brand Group' : '➕ Create Brand Group'}</h4>
+                <p style={{ margin: '0.25rem 0 0', fontSize: '0.8125rem', color: '#71717a' }}>
+                  {editingGroup
+                    ? 'Renaming a group updates the league for every brand inside it.'
+                    : 'Creating a group adds the first brand in that new league.'}
+                </p>
+              </div>
+              <button type='button' className='admin-btn-outline' onClick={resetGroupForm} style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>✕</button>
+            </div>
+            <form onSubmit={handleGroupSubmit}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.75rem', alignItems: 'end' }}>
+                <div className='admin-field' style={{ margin: 0 }}>
+                  <label>Group Name</label>
+                  <input
+                    value={groupName}
+                    onChange={e => setGroupName(e.target.value)}
+                    placeholder='Enter group name'
+                    required
+                    autoFocus
+                  />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+                <button
+                  type='submit'
+                  className='admin-btn-primary'
+                  disabled={groupSubmitting || !groupName.trim()}
+                >
+                  {groupSubmitting ? '⏳ Saving...' : editingGroup ? '💾 Save Group' : '➕ Create Group'}
+                </button>
+                <button type='button' className='admin-btn-outline' onClick={resetGroupForm}>Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {deleteModalBrand && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1000,
+            background: 'rgba(9, 9, 11, 0.72)',
+            backdropFilter: 'blur(10px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+          }}
+          onClick={() => setConfirmingDelete(null)}
+        >
+          <div
+            className='admin-section-card'
+            style={{ width: 'min(520px, 100%)', marginBottom: 0, boxShadow: '0 30px 80px rgba(0,0,0,0.45)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h4 style={{ marginTop: 0 }}>Delete Brand</h4>
+            <p style={{ color: '#a1a1aa', marginTop: '0.5rem' }}>
+              Delete <strong>{deleteModalBrand.name}</strong>?
+            </p>
             <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
-              <button type='submit' className='admin-btn-primary' disabled={submitting || !formData.name.trim()}>
-                {submitting ? '⏳ Saving...' : editing ? '💾 Update Brand' : '➕ Create Brand'}
+              <button className='admin-btn-remove' onClick={() => handleDelete(deleteModalBrand)} style={{ background: '#dc2626' }}>
+                Delete Brand
               </button>
-              <button type='button' className='admin-btn-outline' onClick={resetForm}>Cancel</button>
+              <button className='admin-btn-outline' onClick={() => setConfirmingDelete(null)}>Cancel</button>
             </div>
-          </form>
+          </div>
+        </div>
+      )}
+
+      {deleteModalGroup && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1000,
+            background: 'rgba(9, 9, 11, 0.72)',
+            backdropFilter: 'blur(10px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+          }}
+          onClick={() => setConfirmingGroupDelete(null)}
+        >
+          <div
+            className='admin-section-card'
+            style={{ width: 'min(560px, 100%)', marginBottom: 0, boxShadow: '0 30px 80px rgba(0,0,0,0.45)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h4 style={{ marginTop: 0 }}>Delete Brand Group</h4>
+            <p style={{ color: '#a1a1aa', marginTop: '0.5rem' }}>
+              Delete <strong>{deleteModalGroup.name}</strong> and move all of its brands out of the group?
+            </p>
+            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+              <button className='admin-btn-remove' onClick={() => handleGroupDelete(deleteModalGroup.name)} style={{ background: '#dc2626' }}>
+                Delete Group
+              </button>
+              <button className='admin-btn-outline' onClick={() => setConfirmingGroupDelete(null)}>Cancel</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
