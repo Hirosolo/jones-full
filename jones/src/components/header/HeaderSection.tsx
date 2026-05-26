@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { Router } from "next/router";
 
 import Link from "next/link";
-import { BsCart3 } from "react-icons/bs";
 import { FiSearch, FiMenu } from "react-icons/fi";
 import { BiCaretDown } from "react-icons/bi";
 import { IoIosArrowForward } from "react-icons/io";
@@ -33,8 +32,9 @@ export default function HeaderSection() {
   const headerRef = useRef<HTMLElement>(null);
   const format = useCurrencyFormatter();
   const { user } = useAuthState();
-  const cartCount = user.cart.count;
-  const cartTotal = user.cart.total;
+  // cart removed from UI — keep user reference for other features
+  const cartCount = 0;
+  const cartTotal = 0;
 
   useEffect(() => {
     const mainBanner = document.getElementById("main-banner");
@@ -175,28 +175,7 @@ export default function HeaderSection() {
                   </a>
                 </Link>
               </li>
-              <li className="header__button header__button-cart">
-                <button
-                  aria-label="cart"
-                  onClick={() => setDialog(DialogType.CART)}
-                  onPointerEnter={(e) => setHoveredElement("header-cart-btn")}
-                  onPointerLeave={(e) => setHoveredElement("")}
-                  className="header__button-link"
-                  id="header-cart-btn"
-                >
-                  <BsCart3 />
-                  <ToolTip currentId={hoveredElement} hoverElementId="header-cart-btn">
-                    {cartCount ? (
-                      <span style={{ fontWeight: "400", userSelect: "none" }}>
-                        {format(cartTotal)}
-                      </span>
-                    ) : (
-                      "Empty"
-                    )}
-                  </ToolTip>
-                </button>
-                {cartCount ? <span>{cartCount}</span> : null}
-              </li>
+              {/* Cart removed from header */}
             </ul>
           </div>
         </div>
