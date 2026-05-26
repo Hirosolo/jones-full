@@ -251,10 +251,15 @@ export default function HeroBanner() {
                   <div className="banner__action-button">
                     <Link href={activeSlide.url}>
                       <a className="banner__action-button-link">
-                        <span>{activeSlide.buttonText || 'buy yours'}</span>
+                        <span key={activeSlide.buttonText}>{activeSlide.buttonText || 'buy yours'}</span>
                       </a>
                     </Link>
                   </div>
+                  <style jsx>{`
+                    .banner__action-button-link{display:flex;align-items:center;justify-content:center}
+                    .banner__action-button-link > span{display:inline-block;position:relative;animation:heroButtonTextIn .36s ease}
+                    @keyframes heroButtonTextIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+                  `}</style>
                 </>
               ) : loading ? (
                 <div className="banner__loader">
