@@ -13,6 +13,7 @@
   overflow: hidden;
   z-index: 10;
   position: relative;
+  transition: transform 0.28s ease;
 
   &--pinned {
     position: sticky;
@@ -27,6 +28,11 @@
         transform: translateY(0%);
       }
     }
+  }
+
+  &--hidden {
+    transform: translateY(-100%);
+    pointer-events: none;
   }
 
   &__container {

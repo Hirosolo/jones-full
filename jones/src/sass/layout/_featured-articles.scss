@@ -151,11 +151,12 @@
 
   &__image {
     object-fit: cover;
+    transform: scale(1.08);
     transition: transform 0.7s $timing-func-img;
 
     .featured-articles__card:hover &,
     .featured-articles__card:focus-visible & {
-      transform: scale(1.08);
+      transform: scale(1.12);
     }
   }
 
@@ -182,6 +183,7 @@
     font-size: $text-lg;
     line-height: 1.15;
     text-transform: uppercase;
+    color: #fff;
   }
 
   &__excerpt {

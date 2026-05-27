@@ -71,6 +71,10 @@ export default function FeaturedArticleSection({ content, articles }: FeaturedAr
             articles.map((article) => {
             const href = `/articles/${article.slug}`;
 
+            const stripHtml = (text: string | undefined | null) => {
+              if (!text) return "";
+              return text.replace(/<[^>]*>/g, "").trim();
+            };
             return (
               <Link key={article.slug} href={href}>
                 <a className="featured-articles__card">
@@ -85,7 +89,7 @@ export default function FeaturedArticleSection({ content, articles }: FeaturedAr
                   </div>
                   <div className="featured-articles__body">
                     <h3 className="featured-articles__title">{article.title}</h3>
-                    <p className="featured-articles__excerpt">{article.excerpt}</p>
+                    <p className="featured-articles__excerpt">{stripHtml(article.excerpt)}</p>
                     <span className="featured-articles__link">Read article</span>
                   </div>
                 </a>

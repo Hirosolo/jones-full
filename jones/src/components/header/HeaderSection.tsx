@@ -28,8 +28,10 @@ export default function HeaderSection() {
   const { brandGroups, loading: brandGroupsLoading, refreshBrandGroups } = useBrandGroups();
   const [categories, setCategories] = useState<BackendCategory[]>([]);
   const [pinnedState, setPinnedState] = useState(false);
+  const [hidden, setHidden] = useState(false);
   const scrollTop = useScrollTop();
   const headerRef = useRef<HTMLElement>(null);
+  const lastScrollTopRef = useRef(0);
   const format = useCurrencyFormatter();
   const { user } = useAuthState();
   // cart removed from UI — keep user reference for other features
@@ -40,7 +42,32 @@ export default function HeaderSection() {
     const mainBanner = document.getElementById("main-banner");
     if (mainBanner) {
       setPinnedState(scrollTop > mainBanner.offsetTop + mainBanner.clientHeight);
+    } else {
+      // No main banner on some pages (eg. article pages). Treat header as pinned
+      // so it behaves like a sticky navbar.
+      setPinnedState(scrollTop > 0);
     }
+  }, [scrollTop]);
+
+  useEffect(() => {
+    const last = lastScrollTopRef.current;
+    const delta = scrollTop - last;
+
+    // small threshold to avoid jitter — still update last position
+    if (Math.abs(delta) < 8) {
+      lastScrollTopRef.current = scrollTop;
+      return;
+    }
+
+    if (scrollTop > 120 && delta > 0) {
+      // scrolling down
+      setHidden(true);
+    } else {
+      // scrolling up or near top
+      setHidden(false);
+    }
+
+    lastScrollTopRef.current = scrollTop;
   }, [scrollTop]);
 
   useEffect(() => {
@@ -103,7 +130,7 @@ export default function HeaderSection() {
     <>
       <header
         ref={headerRef}
-        className={`header${pinnedState ? " header--pinned" : ""}`}
+        className={`header${pinnedState ? " header--pinned" : ""}${hidden ? " header--hidden" : ""}`}
       >
         <div className="header__container">
           <div className="header__menu-button">

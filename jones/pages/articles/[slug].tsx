@@ -148,6 +148,12 @@ export const getServerSideProps: GetServerSideProps<ArticlePageProps> = async ({
     const article = await getArticleDetail(slug);
     const { content: _content, ...articleInfo } = article;
 
+    // Strip HTML tags from excerpts so they render as plain text on the page
+    const stripHtml = (text: string | undefined | null) => {
+      if (!text) return "";
+      return text.replace(/<[^>]*>/g, "").trim();
+    };
+
     console.log("[ArticleDetail] fetched article:", articleInfo);
 
     return {
@@ -155,7 +161,7 @@ export const getServerSideProps: GetServerSideProps<ArticlePageProps> = async ({
         article: {
           title: article.title,
           slug: article.slug,
-          excerpt: article.excerpt,
+          excerpt: stripHtml(article.excerpt),
           featuredImage: article.featuredImage,
           author: article.author,
           category: article.category,
@@ -166,7 +172,7 @@ export const getServerSideProps: GetServerSideProps<ArticlePageProps> = async ({
           relatedArticles: article.relatedArticles.map((relatedArticle) => ({
             title: relatedArticle.title,
             slug: relatedArticle.slug,
-            excerpt: relatedArticle.excerpt,
+            excerpt: stripHtml(relatedArticle.excerpt),
             featuredImage: relatedArticle.featuredImage,
           })),
         },

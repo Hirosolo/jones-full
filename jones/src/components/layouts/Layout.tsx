@@ -12,6 +12,7 @@ import { DialogType, useDialog } from "@Contexts/UIContext";
 export default function Layout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const hideHeroBanner = router.asPath.startsWith("/articles/");
+  const hideFeaturesSection = router.asPath.startsWith("/articles/");
 
   useDialog(
     (isVisible) => {
@@ -31,7 +32,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       <Header />
       {!hideHeroBanner && <HeroBanner />}
       <main>{children}</main>
-      <FeaturesSection />
+      {!hideFeaturesSection && <FeaturesSection />}
       <Footer />
       <ScrollUpButton />
     </>
