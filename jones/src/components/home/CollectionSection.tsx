@@ -12,11 +12,11 @@ interface CollectionSectionProps {
 }
 
 export default function CollectionSection({ content }: CollectionSectionProps) {
-  if (!content.enabled) return null;
-
-  const brandGroups = Object.entries(useBrandGroups());
+  const { brandGroups } = useBrandGroups();
   const router = useRouter();
   const galleryRef = useRef<HTMLDivElement>(null);
+
+  if (!content.enabled) return null;
 
   const scrollGallery = (direction: -1 | 1) => {
     const gallery = galleryRef.current;
@@ -68,7 +68,7 @@ export default function CollectionSection({ content }: CollectionSectionProps) {
           ref={galleryRef}
           className="collections__grid collections__grid--gallery"
         >
-          {brandGroups.map(([group], index) => (
+          {Object.entries(brandGroups).map(([group], index) => (
             <div
               key={group}
               className="collections__block collections__block--gallery"

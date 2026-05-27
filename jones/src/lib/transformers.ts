@@ -335,6 +335,7 @@ export function transformArticle(ba: BackendArticle) {
     category: ba.category?.name || "",
     categorySlug: ba.category?.slug || "",
     tags: ba.tags?.map((t) => t.name) || [],
+    featured: ba.featured,
     featuredImage: ba.featured_image ? buildMediaUrl(ba.featured_image) : "",
     publishedAt: ba.published_at,
     url: ba.url,

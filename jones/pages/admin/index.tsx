@@ -14,11 +14,12 @@ import { defaultContent } from '@Data/defaultContent'
 const SECTIONS = [
   { key: 'articles', label: 'Blog Articles', icon: '✍️' },
   { key: 'articleCategories', label: 'Blog Categories', icon: '📚' },
+  { key: 'articleTags', label: 'Blog Tags', icon: '🏷️' },
   { key: 'bestsellers', label: 'Bestsellers', icon: '🏆' },
+  { key: 'featuredArticles', label: 'Featured Articles', icon: '📰' },
   { key: 'brands', label: 'Brands', icon: '🏢' },
   { key: 'categories', label: 'Categories', icon: '📂' },
   { key: 'faq', label: 'FAQ Section', icon: '❓' },
-  { key: 'featuredArticles', label: 'Featured Articles', icon: '📰' },
   { key: 'footer', label: 'Footer', icon: '🦶' },
   { key: 'collections', label: 'Shop Collections', icon: '🧵' },
   { key: 'latestProducts', label: 'Shop New Arrivals', icon: '🆕' },
@@ -3124,7 +3125,7 @@ function ArticleManagement({ showToast }: { showToast: (msg: string, type: 'succ
         title: form.title,
         excerpt: form.excerpt,
         content: form.content,
-        featuredImage: form.featuredImage,
+        featured_image_url: form.featuredImage,
         authorName: form.authorName,
         status: form.status,
         featured: form.featured,
@@ -3640,6 +3641,212 @@ function ArticleCategoryManagement({ showToast }: { showToast: (msg: string, typ
   )
 }
 
+// ─── Article Tag Management ───
+interface ArticleTagItem {
+  id: number
+  name: string
+  slug: string
+  desc: string
+  order: number
+  metaTitle: string
+  metaDesc: string
+  numArticles: number
+}
+
+function ArticleTagManagement({ showToast }: { showToast: (msg: string, type: 'success' | 'error') => void }) {
+  const [tags, setTags] = useState<ArticleTagItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [form, setForm] = useState({ name: '', slug: '', desc: '', order: 0, metaTitle: '', metaDesc: '' })
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState<number | null>(null)
+  const [confirmingDelete, setConfirmingDelete] = useState<number | null>(null)
+
+  const fetchTags = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/admin/article-tags', { cache: 'no-store' })
+      if (!res.ok) throw new Error('Failed to fetch')
+      const data = await res.json()
+      setTags(data.items || [])
+    } catch {
+      showToast('Failed to load article tags', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }, [showToast])
+
+  useEffect(() => { fetchTags() }, [fetchTags])
+
+  useEffect(() => {
+    const handleRefresh = () => { void fetchTags() }
+    window.addEventListener(ADMIN_DATA_REFRESH_EVENT, handleRefresh)
+    return () => window.removeEventListener(ADMIN_DATA_REFRESH_EVENT, handleRefresh)
+  }, [fetchTags])
+
+  const resetForm = () => {
+    setForm({ name: '', slug: '', desc: '', order: 0, metaTitle: '', metaDesc: '' })
+    setEditingId(null)
+  }
+
+  const handleEdit = (tag: ArticleTagItem) => {
+    setForm({
+      name: tag.name,
+      slug: tag.slug,
+      desc: tag.desc,
+      order: tag.order,
+      metaTitle: tag.metaTitle,
+      metaDesc: tag.metaDesc,
+    })
+    setEditingId(tag.id)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      const method = editingId ? 'PUT' : 'POST'
+      const url = editingId ? `/api/admin/article-tags/${editingId}` : '/api/admin/article-tags'
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Save failed')
+      }
+      showToast(editingId ? 'Tag updated' : 'Tag created', 'success')
+      fetch('/api/admin/revalidate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paths: ['/blog'], tags: ['cms-content'] }),
+      }).catch(() => {})
+      resetForm()
+      fetchTags()
+      triggerAdminDataRefresh()
+    } catch (err: any) {
+      showToast(err.message || 'Save failed', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDelete = async (id: number, name: string, numArticles: number) => {
+    if (confirmingDelete !== id) {
+      setConfirmingDelete(id)
+      setTimeout(() => setConfirmingDelete(prev => prev === id ? null : prev), 5000)
+      return
+    }
+    setConfirmingDelete(null)
+    setDeleting(id)
+    try {
+      const res = await fetch(`/api/admin/article-tags/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Delete failed')
+      showToast(`Tag "${name}" deleted${numArticles ? ` (${numArticles} article(s) affected)` : ''}`, 'success')
+      fetch('/api/admin/revalidate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paths: ['/blog'], tags: ['cms-content'] }),
+      }).catch(() => {})
+      resetForm()
+      fetchTags()
+      triggerAdminDataRefresh()
+    } catch {
+      showToast('Failed to delete article tag', 'error')
+    } finally {
+      setDeleting(null)
+    }
+  }
+
+  return (
+    <div>
+      <div className='admin-section-card' style={{ marginBottom: '1.5rem', border: '1px solid rgba(74,222,128,0.3)' }}>
+        <h3>{editingId ? `✏️ Edit Article Tag #${editingId}` : '➕ New Blog Tag'}</h3>
+        <form onSubmit={handleSubmit}>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 100px', gap: '1rem' }}>
+            <div className='admin-field'>
+              <label>Name *</label>
+              <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
+            </div>
+            <div className='admin-field'>
+              <label>Slug (optional)</label>
+              <input value={form.slug} onChange={e => setForm({ ...form, slug: e.target.value })} />
+            </div>
+            <div className='admin-field'>
+              <label>Order</label>
+              <input type='number' value={form.order} onChange={e => setForm({ ...form, order: parseInt(e.target.value) || 0 })} />
+            </div>
+          </div>
+          <div className='admin-field'>
+            <label>Description</label>
+            <textarea value={form.desc} onChange={e => setForm({ ...form, desc: e.target.value })} rows={2} />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div className='admin-field'>
+              <label>Meta Title (SEO)</label>
+              <input value={form.metaTitle} onChange={e => setForm({ ...form, metaTitle: e.target.value })} maxLength={60} />
+            </div>
+            <div className='admin-field'>
+              <label>Meta Description (SEO)</label>
+              <input value={form.metaDesc} onChange={e => setForm({ ...form, metaDesc: e.target.value })} maxLength={160} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+            <button type='submit' className='admin-btn-save' disabled={saving}>
+              {saving ? '⏳ Saving...' : editingId ? '💾 Update' : '➕ Create'}
+            </button>
+            {editingId && (
+              <button type='button' className='admin-btn-outline' onClick={resetForm}>Cancel</button>
+            )}
+          </div>
+        </form>
+      </div>
+
+      <div className='admin-section-card'>
+        <h3>🏷️ Blog Tags ({tags.length})</h3>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '2rem' }}>
+            <div className='admin-spinner' style={{ margin: '0 auto 0.5rem' }} /> Loading...
+          </div>
+        ) : tags.length === 0 ? (
+          <p style={{ color: '#71717a', textAlign: 'center', padding: '1rem' }}>No blog tags yet.</p>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', textAlign: 'left' }}>
+                  <th style={{ padding: '0.5rem', color: '#a1a1aa' }}>Name</th>
+                  <th style={{ padding: '0.5rem', color: '#a1a1aa' }}>Slug</th>
+                  <th style={{ padding: '0.5rem', color: '#a1a1aa' }}>Articles</th>
+                  <th style={{ padding: '0.5rem', color: '#a1a1aa' }}>Order</th>
+                  <th style={{ padding: '0.5rem', color: '#a1a1aa', textAlign: 'right' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tags.map(tag => (
+                  <tr key={tag.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <td style={{ padding: '0.5rem', fontWeight: 500 }}>{tag.name}</td>
+                    <td style={{ padding: '0.5rem', color: '#a1a1aa', fontFamily: 'monospace', fontSize: '0.75rem' }}>{tag.slug}</td>
+                    <td style={{ padding: '0.5rem', color: '#a1a1aa' }}>{tag.numArticles}</td>
+                    <td style={{ padding: '0.5rem', color: '#a1a1aa' }}>{tag.order}</td>
+                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>
+                      <button className='admin-btn-outline' style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', marginRight: 4 }} onClick={() => handleEdit(tag)}>✏️</button>
+                      <button className='admin-btn-remove' style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', minWidth: confirmingDelete === tag.id ? 70 : undefined, background: confirmingDelete === tag.id ? '#dc2626' : undefined }} onClick={() => handleDelete(tag.id, tag.name, tag.numArticles)} disabled={deleting === tag.id}>
+                        {deleting === tag.id ? '⏳' : confirmingDelete === tag.id ? '⚠️ Confirm?' : '🗑️'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function AdminPage() {
   const [isAuth, setIsAuth] = useState(false)
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
@@ -3922,7 +4129,7 @@ export default function AdminPage() {
         </div>
         <nav className='admin-sidebar-nav'>
           {SECTIONS.map(sec => {
-            const isHomeSection = sec.key !== 'seo' && sec.key !== 'footer' && sec.key !== 'products' && sec.key !== 'tags' && sec.key !== 'articles' && sec.key !== 'articleCategories'
+            const isHomeSection = sec.key !== 'seo' && sec.key !== 'footer' && sec.key !== 'products' && sec.key !== 'tags' && sec.key !== 'articles' && sec.key !== 'articleCategories' && sec.key !== 'articleTags'
             const homeKey = sec.key as keyof HomeContent
             const sectionData = isHomeSection ? content.home[homeKey] : null
             const isEnabled = sectionData && 'enabled' in (sectionData as any) ? (sectionData as any).enabled : true
@@ -4054,7 +4261,7 @@ export default function AdminPage() {
                     />
                   </div>
                 )}
-                {sectionKey === 'collections' && (
+                {(sectionKey === 'collections' || sectionKey === 'featuredArticles') && (
                   <div className='admin-field'>
                     <label>Description</label>
                     <textarea
@@ -4188,7 +4395,7 @@ export default function AdminPage() {
           )}
 
           {/* Footer Section */}
-          {activeSection === 'footer' && (
+            {activeSection === 'footer' && (
             <div className='admin-section-card'>
               <h3>Footer Content (Matches Frontend Footer)</h3>
               <h3 style={{ marginTop: '1.5rem' }}>Contact Info</h3>
@@ -4417,6 +4624,11 @@ export default function AdminPage() {
           {/* Blog Article Categories Management Section */}
           {activeSection === 'articleCategories' && (
             <ArticleCategoryManagement showToast={showToast} />
+          )}
+
+          {/* Blog Tags Management Section */}
+          {activeSection === 'articleTags' && (
+            <ArticleTagManagement showToast={showToast} />
           )}
 
         </div>

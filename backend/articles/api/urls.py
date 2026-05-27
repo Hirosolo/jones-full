@@ -4,6 +4,7 @@ from articles.api.views import detail as detail
 from articles.api.views import listing as listing
 from articles.api.views import admin_articles
 from articles.api.views import admin_categories
+from articles.api.views import admin_tags
 
 app_name = 'articles_api'
 
@@ -49,4 +50,16 @@ urlpatterns = [
          name='admin_article_category_update_api'),
     path('admin-article-categories/<int:pk>/delete/', admin_categories.admin_article_category_delete,
          name='admin_article_category_delete_api'),
+
+    # Admin Article Tag CRUD
+    path('admin-article-tags/', admin_tags.admin_article_tag_list,
+         name='admin_article_tag_list_api'),
+    path('admin-article-tags/<int:pk>/', admin_tags.admin_article_tag_detail,
+         name='admin_article_tag_detail_api'),
+    path('admin-article-tags/create/', admin_tags.admin_article_tag_create,
+         name='admin_article_tag_create_api'),
+    path('admin-article-tags/<int:pk>/update/', admin_tags.admin_article_tag_update,
+         name='admin_article_tag_update_api'),
+    path('admin-article-tags/<int:pk>/delete/', admin_tags.admin_article_tag_delete,
+         name='admin_article_tag_delete_api'),
 ]

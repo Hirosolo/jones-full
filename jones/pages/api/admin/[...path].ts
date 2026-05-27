@@ -525,6 +525,17 @@ function backendAdminPath(pathSegments: string[], method: string): string | null
       : prefix('articles/admin-articles/')
   }
 
+  if (section === 'article-tags') {
+    if (id) {
+      if (method === 'GET') return prefix(`articles/admin-article-tags/${id}/`)
+      if (method === 'DELETE') return prefix(`articles/admin-article-tags/${id}/delete/`)
+      return prefix(`articles/admin-article-tags/${id}/update/`)
+    }
+    return method === 'POST'
+      ? prefix('articles/admin-article-tags/create/')
+      : prefix('articles/admin-article-tags/')
+  }
+
   if (section === 'article-categories') {
     if (id) {
       if (method === 'GET') return null
@@ -947,6 +958,13 @@ async function handleMissingAdminKey(req: NextApiRequest, res: NextApiResponse, 
         return res.status(404).json({ error: 'Not found' })
       }
       return res.status(200).json({ total: 0, page: 1, pageSize: 20, numPages: 0, items: [] })
+    }
+
+    if (section === 'article-tags') {
+      if (id) {
+        return res.status(404).json({ error: 'Not found' })
+      }
+      return res.status(200).json({ items: [] })
     }
 
     if (section === 'article-categories') {

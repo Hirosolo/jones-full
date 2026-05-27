@@ -6,9 +6,14 @@ import { defaultContent, type HomeContent, type SiteContent } from "src/data/def
 
 import { getLatestProducts } from "@Lib/api/products";
 import { getCategories } from "@Lib/api/catalog";
+import { getArticles } from "@Lib/api/articles";
+import type { FeaturedArticleItem } from "@Components/home/FeaturedArticleSection";
 
 const CollectionSection = dynamic(
   () => import("@Components/home/CollectionSection")
+);
+const FeaturedArticleSection = dynamic(
+  () => import("@Components/home/FeaturedArticleSection")
 );
 const ProductsSection = dynamic(
   () => import("@Components/home/ProductsSection")
@@ -23,6 +28,7 @@ const Home: NextPage<HomePropTypes> = ({
   newArrivalsImgDataUrls,
   bestSellersImgDataUrls,
   categories,
+  featuredArticles,
   homeSections,
 }) => {
   return (
@@ -47,6 +53,12 @@ const Home: NextPage<HomePropTypes> = ({
           url="/category/new?sort=best"
         />
       )}
+      {homeSections.featuredArticles.enabled && (
+        <FeaturedArticleSection
+          content={homeSections.featuredArticles}
+          articles={featuredArticles}
+        />
+      )}
       <FaqSection content={homeSections.faq} />
     </>
   );
@@ -55,6 +67,7 @@ const Home: NextPage<HomePropTypes> = ({
 export const getStaticProps: GetStaticProps = async () => {
   let products: ProductComponentType[] = [];
   let categories: BackendCategory[] = [];
+  let featuredArticles: FeaturedArticleItem[] = [];
   let homeSections: HomeContent = defaultContent.home;
 
   try {
@@ -67,6 +80,14 @@ export const getStaticProps: GetStaticProps = async () => {
     categories = await getCategories();
   } catch (err) {
     console.error("[Home] Failed to fetch categories:", err);
+  }
+
+  try {
+    const response = await getArticles({ page_size: 48 });
+    const featured = response.articles.filter((article) => article.featured);
+    featuredArticles = (featured.length > 0 ? featured : response.articles).slice(0, 6);
+  } catch (err) {
+    console.error("[Home] Failed to fetch featured articles:", err);
   }
 
   try {
@@ -105,6 +126,7 @@ export const getStaticProps: GetStaticProps = async () => {
       newArrivalsImgDataUrls,
       bestSellersImgDataUrls,
       categories,
+      featuredArticles,
       homeSections,
     },
     revalidate: 300, // ISR: revalidate every 5 minutes
@@ -120,5 +142,6 @@ interface HomePropTypes {
   newArrivalsImgDataUrls: Record<string, string>;
   bestSellersImgDataUrls: Record<string, string>;
   categories: BackendCategory[];
+  featuredArticles: FeaturedArticleItem[];
   homeSections: HomeContent;
 }
