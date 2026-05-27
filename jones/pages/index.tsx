@@ -1,4 +1,4 @@
-import type { NextPage, GetStaticProps } from "next";
+import type { NextPage, GetServerSideProps } from "next";
 import dynamic from "next/dynamic";
 import type { ProductComponentType } from "src/types/shared";
 import type { BackendCategory } from "src/types/backend";
@@ -64,7 +64,7 @@ const Home: NextPage<HomePropTypes> = ({
   );
 };
 
-export const getStaticProps: GetStaticProps = async () => {
+export const getServerSideProps: GetServerSideProps = async () => {
   let products: ProductComponentType[] = [];
   let categories: BackendCategory[] = [];
   let featuredArticles: FeaturedArticleItem[] = [];
@@ -84,8 +84,12 @@ export const getStaticProps: GetStaticProps = async () => {
 
   try {
     const response = await getArticles({ page_size: 48 });
-    const featured = response.articles.filter((article) => article.featured);
-    featuredArticles = (featured.length > 0 ? featured : response.articles).slice(0, 6);
+    featuredArticles = response.articles.slice(0, 6).map((article) => ({
+      title: article.title,
+      slug: article.slug,
+      excerpt: article.excerpt,
+      featuredImage: article.featuredImage,
+    }));
   } catch (err) {
     console.error("[Home] Failed to fetch featured articles:", err);
   }
@@ -129,7 +133,6 @@ export const getStaticProps: GetStaticProps = async () => {
       featuredArticles,
       homeSections,
     },
-    revalidate: 300, // ISR: revalidate every 5 minutes
   };
 };
 

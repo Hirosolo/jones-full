@@ -11,7 +11,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from articles.api.serializers import ArticleSerializer, ArticleCategorySerializer, ArticleTagSerializer, \
+from articles.api.serializers import ArticlePreviewSerializer, ArticleSerializer, ArticleCategorySerializer, ArticleTagSerializer, \
     ArticleAuthorSerializer
 from articles.models import Article, ArticleCategory, ArticleTag
 
@@ -76,6 +76,24 @@ class ArticleFeaturedListView(ListAPIView):
               .exclude(published_at=None)
               .order_by('-published_at'))
         return qs
+
+
+@extend_schema(
+    summary="Danh sách thẻ bài viết nổi bật cho trang chủ",
+    description="Trả về tối đa 6 bài viết để hiển thị ở mục featured articles. Ưu tiên bài viết nổi bật, nếu không có thì lấy bài viết mới nhất đã xuất bản."
+)
+class ArticleFeaturedPreviewListView(APIView):
+    """
+    Danh sách thẻ bài viết gọn cho trang chủ.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        published_articles = Article.objects.filter(status='published').exclude(published_at=None).order_by('-published_at')
+        featured_articles = published_articles.filter(featured=True)
+        queryset = (featured_articles if featured_articles.exists() else published_articles)[:6]
+        serializer = ArticlePreviewSerializer(queryset, many=True, context={'request': request})
+        return Response(serializer.data)
 
 
 @extend_schema(

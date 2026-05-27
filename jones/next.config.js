@@ -35,7 +35,7 @@ const nextConfig = {
   swcMinify: true,
   ...(process.env.DOCKER_BUILD === "1" ? { output: "standalone" } : {}),
   images: {
-    domains: ["res.cloudinary.com", "flagcdn.com", djangoHostname],
+    domains: ["res.cloudinary.com", "flagcdn.com", "images.pexels.com", djangoHostname],
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 60 * 60 * 24 * 30,
     deviceSizes: [320, 420, 640, 768, 992, 1200, 1920],

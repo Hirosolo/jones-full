@@ -330,7 +330,15 @@ export interface BackendArticle {
   full_url: string;
 }
 
+export interface BackendArticlePreview {
+  title: string;
+  slug: string;
+  excerpt_safe?: string;
+  featured_image: string;
+}
+
 export interface BackendArticleDetail extends BackendArticle {
+  content?: string;
   content_safe?: string;
   open_graph: BackendOpenGraph;
   related_articles: BackendArticle[];

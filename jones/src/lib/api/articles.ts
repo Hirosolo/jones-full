@@ -3,12 +3,18 @@ import type { BackendArticle, BackendArticleDetail } from "src/types/backend";
 import { transformArticle, transformArticleDetail } from "@Lib/transformers";
 
 export async function getArticles(params?: { page?: number; page_size?: number; category?: string; tag?: string }) {
-  const data = await http.get<{ results: BackendArticle[]; count: number }>("/api/articles/listing/", {
+  const data = await http.get<{
+    results?: BackendArticle[];
+    count?: number;
+    data?: { results?: BackendArticle[]; pageObj?: { paginator?: { count?: number } } };
+  }>("/api/articles/listing/", {
     searchParams: params,
   });
+  const results = data.results || data.data?.results || [];
+  const count = data.count ?? data.data?.pageObj?.paginator?.count ?? 0;
   return {
-    articles: (data.results || []).map(transformArticle),
-    count: data.count || 0,
+    articles: results.map(transformArticle),
+    count,
   };
 }
 

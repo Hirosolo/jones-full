@@ -14,6 +14,8 @@ urlpatterns = [
         listing.ArticleListView.as_view(), name='article_listing_api'),
     path('featured/',
         listing.ArticleFeaturedListView.as_view(), name='article_featured_api'),
+     path('featured-cards/',
+          listing.ArticleFeaturedPreviewListView.as_view(), name='article_featured_cards_api'),
     path('category/',
         listing.ArticleCategoryListView.as_view(), name='article_category_api'),
     path('tag/',

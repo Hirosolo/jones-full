@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { useRouter } from "next/router";
 
 import Header from "../header";
 import Footer from "../Footer";
@@ -9,6 +10,9 @@ import FeaturesSection from "../FeaturesSection";
 import { DialogType, useDialog } from "@Contexts/UIContext";
 
 export default function Layout({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const hideHeroBanner = router.asPath.startsWith("/articles/");
+
   useDialog(
     (isVisible) => {
       document.body.style.overflow = isVisible ? "hidden" : "auto";
@@ -25,7 +29,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   return (
     <>
       <Header />
-      <HeroBanner />
+      {!hideHeroBanner && <HeroBanner />}
       <main>{children}</main>
       <FeaturesSection />
       <Footer />

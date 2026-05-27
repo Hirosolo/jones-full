@@ -12,6 +12,7 @@
     min-height: min(72vh, 64rem);
     display: flex;
     align-items: flex-end;
+    margin-top: calc(var(--header-height) * -1);
     overflow: hidden;
     border-bottom: 0.1rem solid rgba(255, 255, 255, 0.08);
   }

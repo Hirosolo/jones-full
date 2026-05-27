@@ -1,23 +1,15 @@
 import Image from "next/image";
+import Link from "next/link";
 import { useRef } from "react";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 
 import type { SimpleSectionContent } from "src/data/defaultContent";
 
 export interface FeaturedArticleItem {
-  code: string;
   title: string;
   slug: string;
   excerpt: string;
-  author: string;
-  category: string;
-  categorySlug: string;
-  tags: string[];
-  featured: boolean;
   featuredImage: string;
-  publishedAt?: string;
-  url: string;
-  fullUrl: string;
 }
 
 interface FeaturedArticleSectionProps {
@@ -77,33 +69,27 @@ export default function FeaturedArticleSection({ content, articles }: FeaturedAr
             </div>
           ) : (
             articles.map((article) => {
-            const href = article.fullUrl || article.url || `/articles/${article.slug}`;
-            const publishedLabel = formatPublishedDate(article.publishedAt);
+            const href = `/articles/${article.slug}`;
 
             return (
-              <a key={article.code || article.slug} className="featured-articles__card" href={href}>
-                <div className="featured-articles__media">
-                  <Image
-                    className="featured-articles__image"
-                    alt={article.title}
-                    layout="fill"
-                    src={article.featuredImage || "/assets/images/other-banner-vertical.png"}
-                    objectFit="cover"
-                  />
-                </div>
-                <div className="featured-articles__body">
-                  <div className="featured-articles__meta">
-                    <span>{article.category || "Article"}</span>
-                    {publishedLabel && <span>{publishedLabel}</span>}
+              <Link key={article.slug} href={href}>
+                <a className="featured-articles__card">
+                  <div className="featured-articles__media">
+                    <Image
+                      className="featured-articles__image"
+                      alt={article.title}
+                      layout="fill"
+                      src={article.featuredImage || "/assets/images/other-banner-vertical.png"}
+                      objectFit="cover"
+                    />
                   </div>
-                  <h3 className="featured-articles__title">{article.title}</h3>
-                  <p className="featured-articles__excerpt">{article.excerpt}</p>
-                  <div className="featured-articles__footer">
-                    <span className="featured-articles__author">By {article.author}</span>
+                  <div className="featured-articles__body">
+                    <h3 className="featured-articles__title">{article.title}</h3>
+                    <p className="featured-articles__excerpt">{article.excerpt}</p>
                     <span className="featured-articles__link">Read article</span>
                   </div>
-                </div>
-              </a>
+                </a>
+              </Link>
             );
             })
           )}
@@ -111,17 +97,4 @@ export default function FeaturedArticleSection({ content, articles }: FeaturedAr
       </div>
     </section>
   );
-}
-
-function formatPublishedDate(value?: string) {
-  if (!value) return "";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(date);
 }

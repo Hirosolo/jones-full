@@ -192,6 +192,11 @@ class ArticleSerializer(serializers.ModelSerializer):
         """
         Lấy thông tin danh mục
         """
+        if not obj.category:
+            return {
+                'name': '',
+                'slug': ''
+            }
         return {
             'name': obj.category.name,
             'slug': obj.category.slug
@@ -233,6 +238,21 @@ class ArticleSerializer(serializers.ModelSerializer):
         )
 
 
+class ArticlePreviewSerializer(serializers.ModelSerializer):
+    """
+    Serializer gọn cho thẻ bài viết ở trang chủ.
+    """
+    featured_image = serializers.SerializerMethodField()
+
+    @extend_schema_field(serializers.CharField)
+    def get_featured_image(self, obj):
+        return _article_featured_image_url(obj)
+
+    class Meta:
+        model = Article
+        fields = ('title', 'slug', 'excerpt_safe', 'featured_image')
+
+
 class ArticleRelatedSerializer(serializers.ModelSerializer):
     """
     Serializer bài viết liên quan
@@ -271,6 +291,7 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
     """
     Serializer chi tiết cho model Article
     """
+    content = serializers.SerializerMethodField()
     category = serializers.SerializerMethodField()
     tags = serializers.SerializerMethodField()
     featured_image = serializers.SerializerMethodField()
@@ -286,6 +307,14 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
         Author hiển thị cố định là ADMIN.WEB theo quy ước brand.
         """
         return {'username': 'ADMIN.WEB', 'full_name': ''}
+
+    @extend_schema_field(serializers.CharField)
+    def get_content(self, obj):
+        """
+        Trả về nội dung HTML của bài viết.
+        Ưu tiên content_safe, fallback sang content gốc nếu có.
+        """
+        return getattr(obj, 'content_safe', '') or getattr(obj, 'content', '') or ''
 
     @extend_schema_field(serializers.CharField)
     def get_category(self, obj):
@@ -378,6 +407,6 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Article
         fields = (
-            'code', 'title', 'slug', 'author', 'excerpt_safe', 'content_safe', 'category', 'tags', 'featured_image',
+            'code', 'title', 'slug', 'author', 'excerpt_safe', 'content', 'content_safe', 'category', 'tags', 'featured_image',
             'published_at', 'created_at', 'updated_at', 'url', 'full_url', 'open_graph', 'related_articles'
         )
