@@ -12,7 +12,10 @@ import { DialogType, useDialog } from "@Contexts/UIContext";
 export default function Layout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const hideHeroBanner = router.asPath.startsWith("/articles/");
-  const hideFeaturesSection = router.asPath.startsWith("/articles/");
+  const hideFeaturesSection =
+    router.asPath.startsWith("/articles/") ||
+    router.asPath.startsWith("/about") ||
+    router.asPath.startsWith("/contact");
 
   useDialog(
     (isVisible) => {
