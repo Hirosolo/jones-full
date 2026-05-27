@@ -116,7 +116,10 @@
             <a href="{% url 'admin:myshop_product_changelist' %}">Products</a>
         {% endif %}
         {% if perms.utils.view_homeslider %}
-            <a href="{% url 'admin:utils_homeslider_changelist' %}">Sliders</a>
+          <a href="{% url 'admin:utils_homeslider_changelist' %}">Hero Slider</a>
+        {% endif %}
+        {% if perms.pod_shop.view_cmscontent %}
+          <a href="{% url 'admin:pod_shop_cmscontent_changelist' %}">Landing Page</a>
         {% endif %}
     </nav>
     {% endblock %}

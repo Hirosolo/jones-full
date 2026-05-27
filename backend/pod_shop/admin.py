@@ -30,13 +30,14 @@ def add_to_woocommerce_cart(sku, quantity=1, note=None):
         return True, "Đã thêm vào giỏ hàng thành công."
     return False, f"Lỗi khi thêm vào giỏ hàng: {cart_resp.text}"
 
+from django import forms
 from django.contrib import admin, messages
 from django.utils.html import format_html
 
 from pod_shop.forms import ProductBrandAdminForm, ProductCategoryAdminForm, ProductTagAdminForm, ProductReviewAdminForm, \
     ProductAdminForm
 from pod_shop.models import Brand, Category, ProductImage, Tag, Review, WishList, CartItem, Order, OrderItem, Product, \
-    ProductAttr, ProductAttrItem, ProductColor, ProductSize, ProductColorImage, ProductVariant, BulkReview
+    ProductAttr, ProductAttrItem, ProductColor, ProductSize, ProductColorImage, ProductVariant, BulkReview, CMSContent
 
 # WooCommerce API credentials
 WOOCOMMERCE_API_KEY = "ck_5ce2e3c411f7ee8328dbd9beffe0c7653341b292"
@@ -171,6 +172,57 @@ class CategoryAdmin(admin.ModelAdmin):
             h = f'<a href="{u}" target="_blank" rel="noopener">{h}</a>'
             return format_html(h)
         return "-"
+
+
+class CMSContentAdminForm(forms.ModelForm):
+    payload = forms.JSONField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'rows': 28,
+            'style': 'width: 100%; font-family: monospace; white-space: pre;',
+        }),
+        help_text='Landing page content JSON. Edit home.hero.defaultSlides to control the hero section.',
+    )
+
+    class Meta:
+        model = CMSContent
+        fields = ('payload',)
+
+    def clean_payload(self):
+        payload = self.cleaned_data.get('payload') or {}
+        return payload if isinstance(payload, dict) else {}
+
+
+@admin.register(CMSContent)
+class CMSContentAdmin(admin.ModelAdmin):
+    list_display = ('id', 'updated_at')
+    readonly_fields = ('id', 'updated_at')
+    fieldsets = (
+        (None, {
+            'fields': ('id', 'updated_at', 'payload'),
+        }),
+    )
+    form = CMSContentAdminForm
+    save_on_top = True
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+
+        hero = {}
+        if isinstance(obj.payload, dict):
+            home = obj.payload.get('home') if isinstance(obj.payload.get('home'), dict) else {}
+            hero = home.get('hero') if isinstance(home, dict) and isinstance(home.get('hero'), dict) else {}
+
+        if isinstance(hero, dict) and 'defaultSlides' in hero:
+            from pod_shop.api.views.cms_content import _sync_home_slider_rows
+
+            _sync_home_slider_rows(hero.get('defaultSlides', []))
 
 class ProductImageInline(admin.TabularInline):
     model = ProductImage

@@ -326,27 +326,34 @@ export function transformOrder(bo: BackendOrder | BackendOrderDetail) {
 // ─── Article Transformer ───
 
 export function transformArticle(ba: BackendArticle) {
+  const excerptSafe = (ba as any).excerpt_safe ?? (ba as any).excerptSafe ?? "";
+  const featuredImageValue = (ba as any).featured_image ?? (ba as any).featuredImage ?? "";
+  const authorValue = (ba as any).author ?? {};
+  const categoryValue = (ba as any).category ?? {};
   return {
     code: ba.code,
     title: ba.title,
     slug: ba.slug,
-    excerpt: ba.excerpt_safe || "",
-    author: ba.author?.full_name || ba.author?.username || "ADMIN.WEB",
-    category: ba.category?.name || "",
-    categorySlug: ba.category?.slug || "",
-    tags: ba.tags?.map((t) => t.name) || [],
+    excerpt: excerptSafe,
+    author: authorValue.full_name || authorValue.fullName || authorValue.username || "ADMIN.WEB",
+    category: categoryValue.name || "",
+    categorySlug: categoryValue.slug || "",
+    tags: (ba as any).tags?.map((t: any) => t.name) || [],
     featured: ba.featured,
-    featuredImage: ba.featured_image ? buildMediaUrl(ba.featured_image) : "",
-    publishedAt: ba.published_at,
-    url: ba.url,
-    fullUrl: ba.full_url,
+    featuredImage: featuredImageValue ? buildMediaUrl(featuredImageValue) : "",
+    publishedAt: (ba as any).published_at ?? (ba as any).publishedAt ?? null,
+    url: (ba as any).url || "",
+    fullUrl: (ba as any).full_url || (ba as any).fullUrl || "",
   };
 }
 
 export function transformArticleDetail(ba: BackendArticleDetail) {
+  const contentSafe = (ba as any).content_safe ?? (ba as any).contentSafe ?? "";
+  const relatedArticles = (ba as any).related_articles ?? (ba as any).relatedArticles ?? [];
   return {
     ...transformArticle(ba),
-    content: ba.content_safe || "",
-    relatedArticles: ba.related_articles?.map(transformArticle) || [],
+    content: contentSafe || (ba as any).content || "",
+    openGraph: (ba as any).open_graph ?? (ba as any).openGraph ?? null,
+    relatedArticles: relatedArticles.map(transformArticle) || [],
   };
 }

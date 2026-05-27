@@ -22,6 +22,7 @@ const SECTIONS = [
   { key: 'faq', label: 'FAQ Section', icon: '❓' },
   { key: 'footer', label: 'Footer', icon: '🦶' },
   { key: 'collections', label: 'Shop Collections', icon: '🧵' },
+  { key: 'heroSlider', label: 'Hero Slider', icon: '🖼️' },
   { key: 'latestProducts', label: 'Shop New Arrivals', icon: '🆕' },
   { key: 'products', label: 'Products', icon: '🛍️' },
   { key: 'seo', label: 'SEO Settings', icon: '🔍' },
@@ -3860,6 +3861,8 @@ export default function AdminPage() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
   const [hasChanges, setHasChanges] = useState(false)
 
+  const markDirty = () => setHasChanges(true)
+
   // Check if already authenticated via session cookie
   useEffect(() => {
     const checkAuth = async () => {
@@ -4129,7 +4132,7 @@ export default function AdminPage() {
         </div>
         <nav className='admin-sidebar-nav'>
           {SECTIONS.map(sec => {
-            const isHomeSection = sec.key !== 'seo' && sec.key !== 'footer' && sec.key !== 'products' && sec.key !== 'tags' && sec.key !== 'articles' && sec.key !== 'articleCategories' && sec.key !== 'articleTags'
+            const isHomeSection = sec.key !== 'seo' && sec.key !== 'footer' && sec.key !== 'products' && sec.key !== 'tags' && sec.key !== 'articles' && sec.key !== 'articleCategories' && sec.key !== 'articleTags' && sec.key !== 'heroSlider'
             const homeKey = sec.key as keyof HomeContent
             const sectionData = isHomeSection ? content.home[homeKey] : null
             const isEnabled = sectionData && 'enabled' in (sectionData as any) ? (sectionData as any).enabled : true
@@ -4274,6 +4277,19 @@ export default function AdminPage() {
               </div>
             )
           })}
+
+          {/* Hero Slider Section */}
+          {activeSection === 'heroSlider' && (
+            <HeroSliderManagement
+              enabled={content.home.hero.enabled}
+              order={content.home.hero.order}
+              onEnabledChange={value => updateHomeSection('hero', 'enabled', value)}
+              onOrderChange={value => updateHomeSection('hero', 'order', value)}
+              onDirty={markDirty}
+              onSlidesChange={setHeroSlides}
+              showToast={showToast}
+            />
+          )}
 
           {/* Categories Section — with full category management */}
           {activeSection === 'categories' && (

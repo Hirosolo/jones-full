@@ -249,14 +249,6 @@ def _sync_home_slider_rows(slides):
 
 
 def _resolve_home_hero(payload):
-    sliders = list(_get_hero_sliders_queryset(include_inactive=True))
-    if sliders:
-        return {
-            'enabled': True,
-            'order': 1,
-            'defaultSlides': [_serialize_home_slider(slider) for slider in sliders],
-        }
-
     hero_payload = None
     if isinstance(payload, dict):
         home = payload.get('home') if isinstance(payload.get('home'), dict) else {}
@@ -285,6 +277,14 @@ def _resolve_home_hero(payload):
                 'order': hero_payload.get('order', 1),
                 'defaultSlides': normalized_slides,
             }
+
+    sliders = list(_get_hero_sliders_queryset(include_inactive=True))
+    if sliders:
+        return {
+            'enabled': True,
+            'order': 1,
+            'defaultSlides': [_serialize_home_slider(slider) for slider in sliders],
+        }
 
     return {
         'enabled': True,
