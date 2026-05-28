@@ -37,10 +37,11 @@ export default function Product(props: ProductComponentType) {
   const format = useCurrencyFormatter();
   const { addToWishlist, removeFromWishlist, user } = useAuthState();
   const isOnWishlist = !!user.wishlist.items[id];
-  const MAX_IMAGE_SLIDES = Math.min(3, mediaURLs.length);
+  const imageCount = mediaURLs.length;
+  const MAX_IMAGE_SLIDES = Math.max(1, Math.min(3, imageCount));
   const [imageIndex, setImageIndex] = useState(0);
   const timer = useRef<ReturnType<typeof setInterval>>();
-  const activeImage = mediaURLs[imageIndex % MAX_IMAGE_SLIDES] || mediaURLs[0];
+  const activeImage = imageCount > 0 ? mediaURLs[imageIndex % MAX_IMAGE_SLIDES] : undefined;
   const currentImage = activeImage || ProductPlaceholderImg;
   const productHref = `/product/${getPathString(slug || id)}`;
 
@@ -57,11 +58,14 @@ export default function Product(props: ProductComponentType) {
     <li
       className={`product${small ? " product--small" : ""}`}
       onPointerEnter={() => {
+        if (!imageCount) return;
         clearInterval(timer.current);
-        setImageIndex(1);
-        timer.current = setInterval(() => {
-          setImageIndex((index) => index + 1);
-        }, 1000);
+        setImageIndex(imageCount > 1 ? 1 : 0);
+        if (imageCount > 1) {
+          timer.current = setInterval(() => {
+            setImageIndex((index) => index + 1);
+          }, 1000);
+        }
       }}
       onPointerLeave={() => {
         clearInterval(timer.current);

@@ -8,6 +8,7 @@ export default function Constraints({
   allProductsCount,
   currentProductsCount,
   isSearch,
+  title,
 }: PropTypes) {
   const router = useRouter();
   const { search, q, categoryId } = router.query;
@@ -19,7 +20,7 @@ export default function Constraints({
     height.length +
     year.length
   );
-  const title = {
+  const fallbackTitle = {
     new: "New Arrivals",
     best: "Best Sellers",
   }[Array.isArray(categoryId) ? categoryId[0] : categoryId ?? ""];
@@ -32,7 +33,7 @@ export default function Constraints({
           {isSearch ? (
             <>&ldquo;{search || q}&rdquo;</>
           ) : (
-            title ?? filterState.gender.toLowerCase()
+            title ?? fallbackTitle ?? filterState.gender.toLowerCase()
           )}
         </h1>
         {currentProductsCount ? (
@@ -70,4 +71,5 @@ interface PropTypes {
   allProductsCount: number;
   currentProductsCount: number;
   isSearch?: boolean;
+  title?: string;
 }

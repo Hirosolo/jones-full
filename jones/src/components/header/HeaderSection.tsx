@@ -220,7 +220,7 @@ export default function HeaderSection() {
         {dropdownMode === "categories" && (
           <div className="header__brands-accordion header__categories-grid">
             {categories
-              .filter((category) => getPathString(category.slug || category.name) !== "all")
+              .filter((category) => (category.slug || getPathString(category.name)) !== "all")
               .sort((left, right) => {
                 const leftOrder = left.order ?? 0;
                 const rightOrder = right.order ?? 0;
@@ -229,7 +229,7 @@ export default function HeaderSection() {
               })
               .map((category) => (
               <div key={category.slug} className="header__brands-group">
-                <Link href={"/category/" + getPathString(category.slug || category.name)}>
+                <Link href={"/category/" + (category.slug || getPathString(category.name))}>
                   <a className="header__brands-group-btn header__brands-group-btn--link">
                     {category.name}
                   </a>

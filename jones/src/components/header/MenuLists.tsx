@@ -17,10 +17,10 @@ export const categories: string[] = CategoriesData.categories;
 export function buildCategoriesList(categoryItems: CategoryMenuItem[]) {
   return [
   ...categoryItems
-    .filter((category) => getPathString(category.slug || category.name) !== "all")
+    .filter((category) => (category.slug || getPathString(category.name)) !== "all")
     .map((category) => (
       <li key={category.slug || category.name} className="sidebar__links-item sidebar__links-accordion">
-        <Link href={"/category/" + getPathString(category.slug || category.name)}>
+        <Link href={"/category/" + (category.slug || getPathString(category.name))}>
           <a className="sidebar__anchor" style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
             {category.name}
           </a>

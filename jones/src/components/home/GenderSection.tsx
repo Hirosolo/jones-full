@@ -57,7 +57,7 @@ export default function GenderSection({ categories, content }: GenderSectionProp
 
     return {
       className: fallbackBlock.className,
-      href: category?.slug ? `/category/${getPathString(category.slug)}` : fallbackBlock.href,
+      href: category?.slug ? `/category/${category.slug}` : fallbackBlock.href,
       imgSource: resolveCategoryImage(category, fallbackBlock.imgSource),
       title: category?.name || fallbackBlock.title,
     };

@@ -75,6 +75,10 @@ export async function getCategories() {
     if (Array.isArray(categories) && categories.length > 0) {
       return categories;
     }
+    const paginatedCategories = categories as unknown as { results?: BackendCategory[] };
+    if (Array.isArray(paginatedCategories?.results) && paginatedCategories.results.length > 0) {
+      return paginatedCategories.results;
+    }
     return [DEFAULT_CATEGORY];
   } catch {
     return [DEFAULT_CATEGORY];
