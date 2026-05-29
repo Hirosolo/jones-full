@@ -1,13 +1,12 @@
 import type { ProductComponentType } from "src/types/shared";
 import { useEffect, useState, useRef } from "react";
+import dynamic from "next/dynamic";
 import { Router, useRouter } from "next/router";
 import { Gender } from "src/types/shared";
 import { GetStaticPaths, GetStaticProps } from "next";
 
-import FilterAccordion from "@Components/products/filter/FilterAccordion";
 import SEO from "@Components/common/SEO";
 import Constraints from "@Components/products/constraints";
-import FilterSortSection from "@Components/products/FilterSortSection";
 import ProductsGrid from "@Components/products/ProductsGrid";
 
 import { HIGHEST_PRICE } from "src/constants";
@@ -21,7 +20,22 @@ import { getCategories } from "@Lib/api/catalog";
 import { ProductPlaceholderImg } from "src/constants";
 import { getPathString } from "src/utils";
 
-function CategoryPage({ categoryId }: { categoryId: string }) {
+const FilterAccordion = dynamic(
+  () => import("@Components/products/filter/FilterAccordion"),
+  { ssr: false }
+);
+const FilterSortSection = dynamic(
+  () => import("@Components/products/FilterSortSection"),
+  { ssr: false }
+);
+
+function CategoryPage({
+  categoryId,
+  categoryName,
+}: {
+  categoryId: string;
+  categoryName: string;
+}) {
   const { products } = useProductsState();
   const count = products.length;
 
@@ -44,7 +58,7 @@ function CategoryPage({ categoryId }: { categoryId: string }) {
 
   return (
     <>
-      <SEO title={categoryId} />
+      <SEO title={categoryName || categoryId} />
       <Constraints allProductsCount={count} currentProductsCount={count} />
       <FilterSortSection toggleFilter={() => setFilterActive(!filterActive)} />
 
@@ -69,15 +83,35 @@ function CategoryPage({ categoryId }: { categoryId: string }) {
 
 export default function CategoryPageWithContext({
   categoryId,
+  categoryName,
   products,
   productImagePlaceholders,
 }: {
   categoryId: string;
+  categoryName: string;
   products: ProductComponentType[];
   productImagePlaceholders: Record<string, string>;
 }) {
   const router = useRouter();
   const ref = useRef<{ updateFilterState: Function }>(null);
+
+  // Client-side fallback: if no products were provided by getStaticProps,
+  // attempt a client fetch so we can log and inspect the API response.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (products && products.length > 0) return;
+    if (!categoryId) return;
+
+    (async () => {
+      try {
+        console.debug(`[CategoryPage] client fetch for category="${categoryId}"`);
+        const data = await getProductsByCategory(categoryId);
+        console.debug(`[CategoryPage] client received ${data.products.length} products for category="${categoryId}"`, data);
+      } catch (err) {
+        console.error('[CategoryPage] client fetch error', err);
+      }
+    })();
+  }, [categoryId, products]);
 
   const getQueryAsFilter = () => {
     const queryAsFilter: Partial<filterStateType> = {
@@ -132,7 +166,7 @@ export default function CategoryPageWithContext({
       preFilter={getQueryAsFilter()}
       products={products}
     >
-      <CategoryPage categoryId={categoryId} />
+      <CategoryPage categoryId={categoryId} categoryName={categoryName} />
     </ProductsProvider>
   );
 }
@@ -161,23 +195,26 @@ export const getStaticPaths: GetStaticPaths = async () => {
 
 export const getStaticProps: GetStaticProps = async function ({ params }) {
   const [category = "all"] = params?.categoryId as string[]; 
+
+  let products: ProductComponentType[] = [];
+  let categoryName = category;
   let resolvedCategory = category;
 
   try {
-    const cats = await getCategories();
-    const slugs = cats.map((c) => getPathString(c.slug || "all"));
-    if (!slugs.includes(resolvedCategory)) {
-      resolvedCategory = slugs[0] || "all";
-    }
-  } catch {
-    resolvedCategory = "all";
-  }
-
-  let products: ProductComponentType[] = [];
-
-  try {
-    const data = await getProductsByCategory(resolvedCategory);
+    const data = await getProductsByCategory(category);
+    resolvedCategory = data.category?.slug || category;
+    categoryName = data.category?.name || category;
     products = data.products;
+    // Log fetched products for debugging (server-side log during SSG/build)
+    try {
+      console.log(
+        `[CategoryPage] fetched ${products.length} products for category="${resolvedCategory}"`,
+        products.slice(0, 5)
+      );
+    } catch (e) {
+      // swallow logging errors to avoid breaking build
+      console.error('[CategoryPage] logging error', e);
+    }
   } catch (err) {
     console.error("[CategoryPage] Failed to fetch category products:", err);
   }
@@ -195,6 +232,7 @@ export const getStaticProps: GetStaticProps = async function ({ params }) {
       products,
       count: products.length,
       categoryId: resolvedCategory ?? "",
+      categoryName,
       productImagePlaceholders,
     },
     revalidate: 300,

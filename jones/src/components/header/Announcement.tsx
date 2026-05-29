@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
 import { BsXLg } from "react-icons/bs";
-import { MoonLoader } from "react-spinners";
-import sanitizeHtml from "sanitize-html";
 
 import Modal from "@Components/Modal";
 
@@ -11,7 +9,6 @@ import {
   useDialog,
 } from "@Contexts/UIContext";
 import { setCookie } from "src/utils";
-import { allowedTags } from "src/constants";
 
 interface AnnouncementType {
   headline: string;
@@ -43,11 +40,7 @@ export default function Announcement() {
         setCurrentDetails(details);
       }}
     >
-      <span
-        dangerouslySetInnerHTML={{
-          __html: sanitizeHtml(headline, { allowedTags: [...allowedTags] }),
-        }}
-      ></span>
+      <span>{headline}</span>
     </div>
   ));
 
@@ -81,11 +74,7 @@ export default function Announcement() {
               </div>
             ))}
           </div>
-        ) : (
-          <div className="announcement__loader">
-            <MoonLoader size={22} className="announcement__loader-spinner" />
-          </div>
-        )}
+        ) : null}
 
         <button
           aria-label="close announcement banner"
@@ -100,13 +89,7 @@ export default function Announcement() {
           onClose={() => setCurrentDetails("")}
           visible={visible}
         >
-          <div
-            dangerouslySetInnerHTML={{
-              __html: sanitizeHtml(currentDetails, {
-                allowedTags: [...allowedTags, "a"],
-              }),
-            }}
-          ></div>
+          <div>{currentDetails}</div>
         </Modal>
       </div>
     </div>

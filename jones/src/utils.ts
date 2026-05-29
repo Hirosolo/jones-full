@@ -47,8 +47,9 @@ export const compareObjects = (obj1: object, obj2: object) =>
 export const getPathString = (url: string) =>
   url
     .toLowerCase()
-    .replace(/[^\sa-zA-Z0-9]/g, "")
-    .replace(/\s/g, "-");
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 
 export class ServerError extends Error {
   status: number;

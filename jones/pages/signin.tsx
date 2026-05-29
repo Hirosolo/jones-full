@@ -4,7 +4,7 @@ import AuthForm from "@Components/user/AuthForm";
 export default function SignInPage() {
   return (
     <div className="auth-page">
-      <SEO title="Sign In" />
+      <SEO title="Sign In" noindex />
       <AuthForm />
     </div>
   );

@@ -97,6 +97,64 @@ DEFAULT_FOOTER_CONTENT = {
     },
 }
 
+DEFAULT_HOME_CONTENT = {
+    'collections': {
+        'enabled': True,
+        'order': 2,
+        'title': 'Shop Collections',
+        'subtitle': 'Discover our curated brand collections',
+        'description': 'We\'ve curated a range of brand-led collections across music, movies, sports, and culture so you can discover what fits your style next.',
+    },
+    'latestProducts': {
+        'enabled': True,
+        'order': 3,
+        'title': 'New Arrivals',
+        'subtitle': 'Browse the latest products added to the store',
+    },
+    'categories': {
+        'enabled': True,
+        'order': 4,
+        'title': 'Categories',
+        'subtitle': '',
+    },
+    'youtube': {
+        'enabled': True,
+        'order': 5,
+        'title': 'Watch Our Latest Video',
+        'subtitle': 'Discover the latest trends and products from Jones',
+        'videoId': 'FNMBpEYPTn4',
+    },
+    'bannerCTA': {
+        'enabled': True,
+        'order': 6,
+        'title': 'Discover the Creative Collection for Spring & Summer 2026',
+        'description': 'Shop Custom Designs Across Fashion, Footwear, Home & Living, Gifts, and Decor. Enjoy Up to 40% Off on All Orders Over $50 – Perfect for the New Season!',
+        'backgroundImage': '/img/BannerCTA.jpg',
+        'primaryButton': {'text': 'Shop Now', 'link': '/c/'},
+        'secondaryButton': {'text': 'View Catalog', 'link': '/c/'},
+    },
+    'featuredArticles': {
+        'enabled': True,
+        'order': 7,
+        'title': 'Featured Articles',
+        'subtitle': 'Explore our curated articles on web development trends, tips, and design insights to stay informed and inspired.',
+    },
+    'bestsellers': {
+        'enabled': True,
+        'order': 8,
+        'title': 'Best Sellers',
+        'subtitle': 'Shop our most popular products that customers love',
+    },
+    'faq': {
+        'enabled': True,
+        'order': 9,
+        'title': 'Frequently Asked Questions',
+        'subtitle': 'Find answers to common questions about our products and services.',
+        'footerText': 'Still have questions? Our customer support team is here to help you 24/7',
+        'items': [],
+    },
+}
+
 
 def _merge_dict(base, incoming):
     if not isinstance(base, dict):
@@ -126,6 +184,19 @@ def _ensure_footer_payload(payload):
         return payload, False
 
     payload['footer'] = _merge_dict(DEFAULT_FOOTER_CONTENT, {})
+    return payload, True
+
+
+def _ensure_home_payload(payload):
+    if not isinstance(payload, dict):
+        payload = {}
+
+    existing_home = payload.get('home')
+    if isinstance(existing_home, dict):
+        payload['home'] = _merge_dict(DEFAULT_HOME_CONTENT, existing_home)
+        return payload, False
+
+    payload['home'] = _merge_dict(DEFAULT_HOME_CONTENT, {})
     return payload, True
 
 
@@ -368,8 +439,9 @@ def cms_content_get_view(request):
     if not isinstance(payload, dict):
         payload = {}
 
+    payload, home_seeded = _ensure_home_payload(payload)
     payload, footer_seeded = _ensure_footer_payload(payload)
-    if footer_seeded:
+    if home_seeded or footer_seeded:
         obj.payload = payload
         obj.save(update_fields=['payload', 'updated_at'])
 
@@ -390,6 +462,7 @@ def cms_content_set_view(request):
             {'error': 'Expected a JSON object as request body.'},
             status=status.HTTP_400_BAD_REQUEST,
         )
+    payload, _ = _ensure_home_payload(payload)
     payload, _ = _ensure_footer_payload(payload)
 
     obj = CMSContent.get_solo()
@@ -442,6 +515,10 @@ def cms_content_section_get_view(request, section_path):
 
     obj = CMSContent.get_solo()
     payload = obj.payload or {}
+    payload, home_seeded = _ensure_home_payload(payload)
+    if home_seeded:
+        obj.payload = payload
+        obj.save(update_fields=['payload', 'updated_at'])
     if segments == ['hero']:
         return Response({'section': 'hero', 'value': _resolve_home_hero(payload)})
     found, value = _read_nested(payload, segments)
@@ -468,6 +545,8 @@ def cms_content_section_set_view(request, section_path):
     payload = obj.payload or {}
     if not isinstance(payload, dict):
         payload = {}
+
+    payload, _ = _ensure_home_payload(payload)
 
     _write_nested(payload, segments, value)
 

@@ -18,18 +18,39 @@ export async function getProductsByCategory(
   slug: string,
   params?: { page?: number; page_size?: number; brand?: string; color?: string; size?: string }
 ): Promise<{ category: { name: string; slug: string; desc?: string; image?: string }; products: ProductComponentType[]; total: number }> {
-  const data = await http.get<BackendCategoryProductResponse>("/api/shop/category-product-list/", {
+  // Debug: log request params (client-side)
+  try {
+    console.debug(`[getProductsByCategory] requesting category="${slug}" params=`, params || {});
+  } catch (e) {}
+
+  const data = await http.get<BackendCategoryProductResponse | any>("/api/shop/category-product-list/", {
     searchParams: { slug, ...params },
   });
+
+  // Normalize response shape: some backend endpoints return a wrapper
+  // with an `items` object that contains `category` and `products`.
+  const payload = (data && (data as any).products)
+    ? data
+    : (data && (data as any).items)
+    ? (data as any).items
+    : data;
+
+  // Debug: log received response (client-side)
+  try {
+    console.debug(`[getProductsByCategory] received ${((payload && payload.products) || []).length} products for category="${slug}"`, {
+      category: payload?.category,
+      sample: (payload?.products || []).slice(0, 5),
+    });
+  } catch (e) {}
   return {
     category: {
-      name: data.category?.name || slug,
-      slug: data.category?.slug || slug,
-      desc: data.category?.desc,
-      image: data.category?.image,
+      name: payload.category?.name || slug,
+      slug: payload.category?.slug || slug,
+      desc: payload.category?.desc,
+      image: payload.category?.image,
     },
-    products: (data.products || []).map(transformProduct),
-    total: data.products?.length || 0,
+    products: (payload.products || []).map(transformProduct),
+    total: payload.products?.length || 0,
   };
 }
 

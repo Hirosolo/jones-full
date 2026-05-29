@@ -1,10 +1,10 @@
-import type { GetServerSideProps, NextPage } from "next";
+import type { GetStaticPaths, GetStaticProps, NextPage } from "next";
 import Image from "next/image";
 import Link from "next/link";
 
 import SEO from "@Components/common/SEO";
 import { DOMAIN_NAME } from "@Lib/config";
-import { getArticleDetail } from "@Lib/api/articles";
+import { getArticleDetail, getArticles } from "@Lib/api/articles";
 
 interface ArticlePageProps {
   article: {
@@ -40,6 +40,16 @@ const ArticleDetailPage: NextPage<ArticlePageProps> = ({ article }) => {
       }).format(new Date(article.publishedAt))
     : "";
   const canonicalUrl = `${DOMAIN_NAME.replace(/\/$/, "")}/articles/${article.slug}`;
+  const articleJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: article.title,
+    description: article.excerpt || article.title,
+    image: bannerImage ? [bannerImage] : undefined,
+    author: article.author ? { "@type": "Person", name: article.author } : undefined,
+    datePublished: article.publishedAt || undefined,
+    mainEntityOfPage: canonicalUrl,
+  };
 
 
   return (
@@ -49,7 +59,8 @@ const ArticleDetailPage: NextPage<ArticlePageProps> = ({ article }) => {
         description={article.excerpt || article.title}
         canonical={canonicalUrl}
         ogType="article"
-        ogImage={bannerImage ?? ''}
+        ogImage={bannerImage || undefined}
+        jsonLd={articleJsonLd}
       />
 
       <article className="article-page">
@@ -137,7 +148,16 @@ const ArticleDetailPage: NextPage<ArticlePageProps> = ({ article }) => {
   );
 };
 
-export const getServerSideProps: GetServerSideProps<ArticlePageProps> = async ({ params }) => {
+export const getStaticPaths: GetStaticPaths = async () => {
+  const articles = await getArticles({ page_size: 500 }).catch(() => ({ articles: [] }));
+
+  return {
+    paths: articles.articles.map((article) => ({ params: { slug: article.slug } })),
+    fallback: "blocking",
+  };
+};
+
+export const getStaticProps: GetStaticProps<ArticlePageProps> = async ({ params }) => {
   const slug = params?.slug;
 
   if (typeof slug !== "string" || !slug.trim()) {
@@ -169,7 +189,12 @@ export const getServerSideProps: GetServerSideProps<ArticlePageProps> = async ({
           publishedAt: article.publishedAt || null,
           content: article.content,
           openGraph: article.openGraph || null,
-          relatedArticles: article.relatedArticles.map((relatedArticle) => ({
+          relatedArticles: article.relatedArticles.map((relatedArticle: {
+            title: string;
+            slug: string;
+            excerpt: string;
+            featuredImage: string;
+          }) => ({
             title: relatedArticle.title,
             slug: relatedArticle.slug,
             excerpt: stripHtml(relatedArticle.excerpt),
@@ -177,6 +202,7 @@ export const getServerSideProps: GetServerSideProps<ArticlePageProps> = async ({
           })),
         },
       },
+      revalidate: 300,
     };
   } catch {
     return { notFound: true };

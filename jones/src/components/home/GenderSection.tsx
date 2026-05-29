@@ -29,12 +29,17 @@ function resolveCategoryImage(
   if (!value) return fallbackImage;
   if (value.startsWith("/api/media/")) return value;
   if (value.startsWith("/media/")) return `/api/media/${value.slice("/media/".length)}`;
+  if (value.startsWith("/api/image-proxy")) return value;
+  if (value.startsWith("//")) {
+    return `/api/image-proxy?url=${encodeURIComponent(`https:${value}`)}`;
+  }
   if (value.startsWith("http://") || value.startsWith("https://")) {
     try {
       const parsed = new URL(value);
       if (parsed.pathname.startsWith("/media/")) {
         return `/api/media/${parsed.pathname.slice("/media/".length)}`;
       }
+      return `/api/image-proxy?url=${encodeURIComponent(value)}`;
     } catch {
       return value;
     }

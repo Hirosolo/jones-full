@@ -33,6 +33,14 @@ const securityHeaders = Object.keys(headerOptions).map(key => ({
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+  productionBrowserSourceMaps: true,
+  webpack(config, { dev }) {
+    if (dev) {
+      config.devtool = "source-map";
+    }
+
+    return config;
+  },
   ...(process.env.DOCKER_BUILD === "1" ? { output: "standalone" } : {}),
   images: {
     domains: ["res.cloudinary.com", "flagcdn.com", "images.pexels.com", djangoHostname],

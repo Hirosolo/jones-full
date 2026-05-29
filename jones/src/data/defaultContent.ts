@@ -191,7 +191,7 @@ export const defaultContent: SiteContent = {
     latestProducts: {
       enabled: true,
       order: 3,
-      title: 'Shop New Arrivals',
+      title: '',
       subtitle: 'Browse the latest products added to the store',
     },
 
@@ -230,7 +230,7 @@ export const defaultContent: SiteContent = {
     bestsellers: {
       enabled: true,
       order: 8,
-      title: 'Our Bestsellers',
+      title: '',
       subtitle: 'Shop our most popular products that customers love',
     },
 

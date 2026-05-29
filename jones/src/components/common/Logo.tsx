@@ -9,7 +9,7 @@ export default function Logo() {
       <a className="logo">
         <FutureImage
           width={Math.round(logoImg.width * 0.105)}
-          height={Math.round(logoImg.height * 0.09)}
+          height={Math.round(logoImg.height * 0.105)}
           alt=""
           src={logoImg}
         />

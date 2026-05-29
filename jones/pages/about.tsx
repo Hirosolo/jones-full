@@ -3,7 +3,10 @@ import SEO from "@Components/common/SEO";
 export default function AboutPage() {
   return (
     <div className="page about-page">
-      <SEO title="About Us" />
+      <SEO
+        title="About Us"
+        description="Learn about Jones, our approach to curation, and the experience we aim to deliver for every customer."
+      />
       <main className="page__container about-page__container">
         <section className="about-page__hero">
           <p className="about-page__eyebrow">Who we are</p>

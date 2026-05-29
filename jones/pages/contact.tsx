@@ -39,7 +39,10 @@ export default function ContactPage() {
 
   return (
     <div className="page contact-page">
-      <SEO title="Contact Us" />
+      <SEO
+        title="Contact Us"
+        description="Contact Jones for customer support, product questions, and order help."
+      />
       <main className="page__container contact-page__container">
         <section className="contact-page__hero">
           <p className="contact-page__eyebrow">Get in touch</p>

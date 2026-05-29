@@ -6,11 +6,11 @@ export default function useBrandGroups() {
   const [brandGroups, setBrandGroups] = useState<Record<string, BrandGroupItem[]>>({});
   const [loading, setLoading] = useState(true);
 
-  const refreshBrandGroups = useCallback(async () => {
+  const refreshBrandGroups = useCallback(async (forceRefresh = false) => {
     setLoading(true);
 
     try {
-      const response = await getBrandGroups();
+      const response = await getBrandGroups({ forceRefresh });
       const groups = normalizeBrandGroups(response);
       setBrandGroups(groups);
     } catch {

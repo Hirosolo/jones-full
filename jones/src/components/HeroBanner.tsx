@@ -8,6 +8,7 @@ import { useAnnouncementState } from "@Contexts/UIContext";
 import useMouseCoords from "@Hooks/useMouseCoords";
 import useScrollTop from "@Hooks/useScrollTop";
 import SocialIcons from "./common/SocialButtons";
+import { defaultContent } from "src/data/defaultContent";
 
 import BannerImage1 from "@Images/acdc-hoodie-banner.webp";
 import BannerImage2 from "@Images/monsterEnergy-cap-banner.webp";
@@ -70,9 +71,38 @@ function stripHtml(html: string) {
   return String(html || "").replace(/<[^>]*>/g, "").trim();
 }
 
+function normalizeHeroSlides(heroSlides: BackendHeroSlide[]) {
+  return heroSlides
+    .map((slide: BackendHeroSlide) => {
+      const title = stripHtml(String(slide?.title || "")).trim();
+      const description = stripHtml(String(slide?.description || "")).trim();
+      const imagePath = String(slide?.image || "").trim();
+      const imageSrc = getImageSource(imagePath);
+      const order = Number((slide as any)?.order || 0) || 0;
+      const buttonText = stripHtml(String(slide?.buttonText || "")).trim();
+
+      if (!title || !imagePath) {
+        return null;
+      }
+
+      return {
+        order,
+        type: stripHtml(String(slide?.type || "")) || title,
+        secondary: splitSecondaryText(description),
+        buttonText: buttonText || "buy yours",
+        title,
+        imageSrc,
+        url: String(slide?.link || "/").trim() || "/",
+      } as HeroSlide;
+    })
+    .filter((slide: HeroSlide | null): slide is HeroSlide => Boolean(slide)) as HeroSlide[];
+}
+
+const initialSlides = normalizeHeroSlides(defaultContent.home.hero.defaultSlides);
+
 export default function HeroBanner() {
-  const [slides, setSlides] = useState<HeroSlide[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [slides, setSlides] = useState<HeroSlide[]>(initialSlides);
+  const [loading, setLoading] = useState(false);
   const [activeView, setActiveView] = useState(0);
   const bannerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -87,7 +117,6 @@ export default function HeroBanner() {
     let cancelled = false;
 
     async function loadHeroSlides() {
-      setLoading(true);
       try {
         const response = await fetch("/api/shop/cms/site-content/", { cache: "no-store" });
         const data = await response.json().catch(() => ({}));
@@ -95,47 +124,19 @@ export default function HeroBanner() {
           ? data.home.hero.defaultSlides
           : [];
 
-        const normalized = heroSlides
-          .map((slide: BackendHeroSlide) => {
-            const title = stripHtml(String(slide?.title || "")).trim();
-            const description = stripHtml(String(slide?.description || "")).trim();
-            const imagePath = String(slide?.image || "").trim();
-            const imageSrc = getImageSource(imagePath);
-            const order = Number((slide as any)?.order || 0) || 0;
-            const buttonText = stripHtml(String(slide?.buttonText || '')).trim();
+        const normalized = normalizeHeroSlides(heroSlides);
 
-            if (!title || !imagePath) {
-              return null;
-            }
+        if (normalized.length > 0) {
+          normalized.sort((a, b) => (a.order || 0) - (b.order || 0));
+          console.log("[HeroBanner] loaded hero slides", normalized.length);
 
-            return {
-              order,
-              type: stripHtml(String(slide?.type || "")) || title,
-              secondary: splitSecondaryText(description),
-              buttonText: buttonText || 'buy yours',
-              title,
-              imageSrc,
-              url: String(slide?.link || "/").trim() || "/",
-            } as HeroSlide;
-          })
-          .filter((slide: HeroSlide | null): slide is HeroSlide => Boolean(slide)) as HeroSlide[];
-
-        normalized.sort((a, b) => (a.order || 0) - (b.order || 0));
-        console.log("[HeroBanner] loaded hero slides", normalized.length);
-
-        if (!cancelled) {
-          setSlides(normalized);
-          setActiveView(0);
+          if (!cancelled) {
+            setSlides(normalized);
+            setActiveView(0);
+          }
         }
       } catch (error) {
         console.log("[HeroBanner] failed to load hero slides", error);
-        if (!cancelled) {
-          setSlides([]);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
       }
     }
 
@@ -204,50 +205,42 @@ export default function HeroBanner() {
             <div className="banner__main">
               {!!bannerRef.current && activeSlide ? (
                 <>
-                  {slides.map((data, i) => (
-                    <div
-                      key={data.title + data.type}
-                      className={
-                        "banner__content" +
-                        (activeView == i ? " banner__content--active" : "")
-                      }
-                    >
-                      <div className="banner__headings">
-                        <p className="banner__secondary-text">
-                          <span>{data.secondary.highlighted}</span>{" "}
-                          {data.secondary.text}
-                        </p>
-                        <h2
-                          style={{
-                            transform: `translate3d(${-x * 0.2}px, 0, 0)`,
-                          }}
-                          className="banner__title-type"
-                        >
-                          <span>{data.type}</span>
-                        </h2>
-                        <h3 className="banner__title">
-                          <span>{data.title}</span>
-                        </h3>
-                      </div>
-                      <div
+                  <div className="banner__content banner__content--active">
+                    <div className="banner__headings">
+                      <p className="banner__secondary-text">
+                        <span>{activeSlide.secondary.highlighted}</span>{" "}
+                        {activeSlide.secondary.text}
+                      </p>
+                      <h2
                         style={{
-                          transform: `translate3d(${-x * 0.8}px, ${-y * 0.4 + scrollTop * 0.1
-                            }px, 0)`,
+                          transform: `translate3d(${-x * 0.2}px, 0, 0)`,
                         }}
-                        className="banner__image"
+                        className="banner__title-type"
                       >
-                        <Image
-                          className="banner__image-element"
-                          layout="responsive"
-                          width={data.imageSrc.width}
-                          height={data.imageSrc.height}
-                          src={data.imageSrc}
-                          priority
-                          alt={data.title}
-                        />
-                      </div>
+                        <span>{activeSlide.type}</span>
+                      </h2>
+                      <h3 className="banner__title">
+                        <span>{activeSlide.title}</span>
+                      </h3>
                     </div>
-                  ))}
+                    <div
+                      style={{
+                        transform: `translate3d(${-x * 0.8}px, ${-y * 0.4 + scrollTop * 0.1
+                          }px, 0)`,
+                      }}
+                      className="banner__image"
+                    >
+                      <Image
+                        className="banner__image-element"
+                        layout="responsive"
+                        width={activeSlide.imageSrc.width}
+                        height={activeSlide.imageSrc.height}
+                        src={activeSlide.imageSrc}
+                        priority
+                        alt={activeSlide.title}
+                      />
+                    </div>
+                  </div>
                   <div className="banner__action-button">
                     <Link href={activeSlide.url}>
                       <a className="banner__action-button-link">

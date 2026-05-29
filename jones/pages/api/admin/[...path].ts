@@ -986,7 +986,7 @@ async function handleMissingAdminKey(req: NextApiRequest, res: NextApiResponse, 
         return res.status(response.status).json({ error: 'Failed to load content' })
       }
       const data = await response.json()
-      return res.status(200).json(stripAdminHeroSlides(deepMerge(defaultContent, data as Partial<SiteContent>)))
+      return res.status(200).json(stripAdminHeroSlides(data as SiteContent))
     } catch (error) {
       return res.status(500).json({ error: 'Failed to load content' })
     }

@@ -1,12 +1,10 @@
-import Head from "next/head";
+import SEO from "@Components/common/SEO";
 
 export default function PaymentSuccess() {
   return (
     <div className="page">
       <div className="page__container">
-        <Head>
-          <title>Thanks for your order!</title>
-        </Head>
+        <SEO title="Payment Received" noindex />
         <h1 className="main-heading">Payment Received</h1>
         <section>
           <p>

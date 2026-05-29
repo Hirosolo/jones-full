@@ -3883,7 +3883,7 @@ export default function AdminPage() {
         const contentRes = await fetch('/api/admin/content', { cache: 'no-store' })
         if (contentRes.ok) {
           const data = await contentRes.json()
-          setContent(stripHeroSlidesFromContent({ ...defaultContent, ...data, productSeo: data.productSeo || [] }))
+          setContent(stripHeroSlidesFromContent({ ...data, productSeo: data.productSeo || [] }))
         }
         setIsAuth(true)
       } catch {
@@ -3918,7 +3918,7 @@ export default function AdminPage() {
       // Load content
       const contentRes = await fetch('/api/admin/content', { cache: 'no-store' })
       const contentData = await contentRes.json()
-      setContent(stripHeroSlidesFromContent({ ...defaultContent, ...contentData, productSeo: contentData.productSeo || [] }))
+      setContent(stripHeroSlidesFromContent({ ...contentData, productSeo: contentData.productSeo || [] }))
       setIsAuth(true)
     } catch (err: any) {
       setLoginError(err.message || 'Login failed')

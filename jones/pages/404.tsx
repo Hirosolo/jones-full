@@ -1,14 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import MaskImage from "@Images/forma_nike_03-1-2560x1660.png";
-import Head from "next/head";
+import SEO from "@Components/common/SEO";
 
 export default function Custom404() {
   return (
     <div className="not-found">
-      <Head>
-        <title>Page Not Found</title>
-      </Head>
+      <SEO title="Page Not Found" noindex />
       <h1 className="not-found__title">
         <span>404</span>
         <Image

@@ -30,8 +30,12 @@ import { ProductPlaceholderImg } from "src/constants";
 
 function buildMediaUrl(path: string): string {
   if (!path) return "";
-  if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("//")) {
+  if (path.startsWith("/api/media/") || path.startsWith("/api/image-proxy")) {
     return path;
+  }
+  if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("//")) {
+    const normalized = path.startsWith("//") ? `https:${path}` : path;
+    return `/api/image-proxy?url=${encodeURIComponent(normalized)}`;
   }
   if (path.startsWith("/")) return `${DJANGO_BASE_URL}${path}`;
   return `${DJANGO_BASE_URL}/${path}`;

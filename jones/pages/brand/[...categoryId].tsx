@@ -1,13 +1,12 @@
 import type { ProductComponentType } from "src/types/shared";
 import { useEffect, useState, useRef } from "react";
+import dynamic from "next/dynamic";
 import { Router, useRouter } from "next/router";
 import { Gender } from "src/types/shared";
 import { GetStaticPaths, GetStaticProps } from "next";
 
-import FilterAccordion from "@Components/products/filter/FilterAccordion";
 import SEO from "@Components/common/SEO";
 import Constraints from "@Components/products/constraints";
-import FilterSortSection from "@Components/products/FilterSortSection";
 import ProductsGrid from "@Components/products/ProductsGrid";
 
 import { HIGHEST_PRICE } from "src/constants";
@@ -20,6 +19,15 @@ import { getProductsByBrand } from "@Lib/api/products";
 import { ProductPlaceholderImg } from "src/constants";
 import { getPathString } from "src/utils";
 import { getResolvedBrandGroups } from "@Lib/api/catalog";
+
+const FilterAccordion = dynamic(
+  () => import("@Components/products/filter/FilterAccordion"),
+  { ssr: false }
+);
+const FilterSortSection = dynamic(
+  () => import("@Components/products/FilterSortSection"),
+  { ssr: false }
+);
 
 function BrandPage({ brandTitle }: { brandTitle: string }) {
   const { products } = useProductsState();
@@ -49,7 +57,7 @@ function BrandPage({ brandTitle }: { brandTitle: string }) {
   return (
     <>
       <SEO title={brandTitle} />
-      <Constraints allProductsCount={count} currentProductsCount={count} title={brandTitle} />
+      <Constraints allProductsCount={count} currentProductsCount={count} />
       <FilterSortSection toggleFilter={() => setFilterActive(!filterActive)} />
 
       <div className="results">
@@ -185,8 +193,8 @@ export const getStaticProps: GetStaticProps = async function ({ params }) {
       products: allProducts,
       count: allProducts.length,
       categoryId: category ?? "",
-      brand: brand ? { ...brand, logo: brand.logo ?? null } : undefined,
       productImagePlaceholders,
+      ...(brand ? { brand: { ...brand, logo: brand.logo ?? null } } : {}),
     },
     revalidate: 300,
   };

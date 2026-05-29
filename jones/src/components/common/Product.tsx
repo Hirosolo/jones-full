@@ -43,7 +43,7 @@ export default function Product(props: ProductComponentType) {
   const timer = useRef<ReturnType<typeof setInterval>>();
   const activeImage = imageCount > 0 ? mediaURLs[imageIndex % MAX_IMAGE_SLIDES] : undefined;
   const currentImage = activeImage || ProductPlaceholderImg;
-  const productHref = `/product/${getPathString(slug || id)}`;
+  const productHref = `/p/${getPathString(slug || id)}`;
 
   const handleWishlistAction = () => {
     if (isOnWishlist) {

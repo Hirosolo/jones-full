@@ -8,7 +8,15 @@ import { getSearchResults } from "@Lib/api/products";
 const SearchPage: NextPage<SearchPageType> = ({ query, products, count }) => {
   return (
     <div>
-      <SEO title={`"${query}"`} />
+      <SEO
+        title={query ? `Search results for "${query}"` : "Search"}
+        description={
+          query
+            ? `Browse results for ${query} in the Jones catalog.`
+            : "Search the Jones catalog for products, categories, and articles."
+        }
+        noindex
+      />
       <Constraints
         isSearch
         allProductsCount={count}

@@ -2,6 +2,7 @@ import type { ProductComponentType } from "src/types/shared";
 import { NextPage, GetStaticProps, GetStaticPaths } from "next";
 import SEO from "@Components/common/SEO";
 import { useCurrencyFormatter } from "@Contexts/UIContext";
+import { DJANGO_BASE_URL, DOMAIN_NAME } from "@Lib/config";
 import { getLatestProducts, getProductDetail, getSitemapProducts } from "@Lib/api/products";
 import { ProductPlaceholderImg } from "src/constants";
 import ProductsGrid from "@Components/products/ProductsGrid";
@@ -10,6 +11,26 @@ import ProductGallery from "@Components/products/ProductGallery";
 import ProductCartForm from "@Components/products/ProductCartForm";
 import ProductDetails from "@Components/products/ProductDetails";
 import RatingStars from "@Components/common/RatingStars";
+
+async function resolveAliasSlug(productSlug: string): Promise<string | null> {
+  try {
+    const response = await fetch(`${DJANGO_BASE_URL}/api/shop/product-slug-aliases/`, {
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = (await response.json().catch(() => ({}))) as { aliases?: Record<string, string> };
+    const mappedSlug = payload.aliases?.[productSlug];
+
+    return mappedSlug && mappedSlug !== productSlug ? mappedSlug : null;
+  } catch (error) {
+    console.error("[ProductPage] Failed to resolve slug alias:", error);
+    return null;
+  }
+}
 
 const ProductPage: NextPage<ProductPageType> = ({
   product,
@@ -50,12 +71,33 @@ const ProductPage: NextPage<ProductPageType> = ({
   const shortDescription = product.details
     ? product.details.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim()
     : "";
-
-  console.log("[ProductPage] product:", product);
+  const canonicalUrl = `${DOMAIN_NAME.replace(/\/$/, "")}/p/${product.slug || product.id}`;
+  const productJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: title,
+    description: shortDescription || title,
+    image: product.mediaURLs,
+    brand: brandName ? { "@type": "Brand", name: brandName } : undefined,
+    sku: String(product.id),
+    offers: {
+      "@type": "Offer",
+      priceCurrency: "USD",
+      price: salePrice,
+      availability: isAvailable ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      url: canonicalUrl,
+    },
+  };
 
   return (
     <>
-      <SEO title={product.title} />
+      <SEO
+        title={product.title}
+        description={shortDescription || `${title} available now at Jones.`}
+        canonical={canonicalUrl}
+        ogImage={product.mediaURLs[0] || "/assets/images/banner-bg-eindhoven.webp"}
+        jsonLd={productJsonLd}
+      />
 
       <div className="product-view">
         <ProductGallery
@@ -147,7 +189,7 @@ const ProductPage: NextPage<ProductPageType> = ({
 
           <a
             className="product-view__buy"
-            href={product.url || `/product/${product.slug || product.id}`}
+            href={product.url || `/p/${product.slug || product.id}`}
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -196,13 +238,23 @@ export const getStaticPaths: GetStaticPaths = async () => {
 };
 
 export const getStaticProps: GetStaticProps = async ({ params }) => {
-  const productSlug = params?.productSlug as string;
+  const requestedSlug = params?.productSlug as string;
 
+  let resolvedSlug = requestedSlug;
   let product: ProductComponentType | null = null;
   let relatedProducts: ProductComponentType[] = [];
 
   try {
-    product = await getProductDetail(productSlug);
+    product = await getProductDetail(resolvedSlug);
+
+    if (!product) {
+      const aliasSlug = await resolveAliasSlug(requestedSlug);
+
+      if (aliasSlug) {
+        resolvedSlug = aliasSlug;
+        product = await getProductDetail(resolvedSlug);
+      }
+    }
   } catch (err) {
     console.error("[ProductPage] Failed to fetch product detail:", err);
   }

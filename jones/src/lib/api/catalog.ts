@@ -13,6 +13,71 @@ const DEFAULT_CATEGORY: BackendCategory = {
   order: 0,
 };
 
+type CacheEntry<T> = {
+  value: T;
+  timestamp: number;
+};
+
+const brandGroupsCacheKey = "/api/shop/brand-groups/";
+const categoriesCacheKey = "/api/shop/categories-list/";
+const sharedRequestCache = new Map<string, Promise<unknown>>();
+const sharedResponseCache = new Map<string, CacheEntry<unknown>>();
+const CLIENT_CACHE_TTL_MS = 60_000;
+
+function isBrowser() {
+  return typeof window !== "undefined";
+}
+
+function getCachedValue<T>(cacheKey: string): T | null {
+  if (!isBrowser()) return null;
+  const entry = sharedResponseCache.get(cacheKey) as CacheEntry<T> | undefined;
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > CLIENT_CACHE_TTL_MS) {
+    sharedResponseCache.delete(cacheKey);
+    return null;
+  }
+  return entry.value;
+}
+
+function setCachedValue<T>(cacheKey: string, value: T): T {
+  if (isBrowser()) {
+    sharedResponseCache.set(cacheKey, { value, timestamp: Date.now() });
+  }
+  return value;
+}
+
+async function getSharedClientResource<T>(
+  cacheKey: string,
+  fetcher: () => Promise<T>,
+  options: { forceRefresh?: boolean } = {}
+): Promise<T> {
+  if (isBrowser() && !options.forceRefresh) {
+    const cachedValue = getCachedValue<T>(cacheKey);
+    if (cachedValue !== null) {
+      return cachedValue;
+    }
+
+    const inFlight = sharedRequestCache.get(cacheKey) as Promise<T> | undefined;
+    if (inFlight) {
+      return inFlight;
+    }
+  }
+
+  const request = fetcher().then((value) => {
+    setCachedValue(cacheKey, value);
+    if (isBrowser()) {
+      sharedRequestCache.delete(cacheKey);
+    }
+    return value;
+  });
+
+  if (isBrowser()) {
+    sharedRequestCache.set(cacheKey, request);
+  }
+
+  return request;
+}
+
 type BrandGroupResponse = {
   groups?: {
     name?: string;
@@ -53,8 +118,8 @@ export function getDefaultBrandGroups() {
   return DEFAULT_BRAND_GROUPS;
 }
 
-export async function getBrandGroups() {
-  return http.get<BrandGroupResponse>("/api/shop/brand-groups/");
+export async function getBrandGroups(options: { forceRefresh?: boolean } = {}) {
+  return getSharedClientResource(brandGroupsCacheKey, () => http.get<BrandGroupResponse>("/api/shop/brand-groups/"), options);
 }
 
 export function normalizeBrandGroups(response?: BrandGroupResponse): Record<string, BrandGroupItem[]> {
@@ -104,20 +169,22 @@ export async function getResolvedBrandGroups(): Promise<Record<string, BrandGrou
   }
 }
 
-export async function getCategories() {
-  try {
-    const categories = await http.get<BackendCategory[]>("/api/shop/categories-list/");
-    if (Array.isArray(categories) && categories.length > 0) {
-      return categories;
+export async function getCategories(options: { forceRefresh?: boolean } = {}) {
+  return getSharedClientResource(categoriesCacheKey, async () => {
+    try {
+      const categories = await http.get<BackendCategory[]>("/api/shop/categories-list/");
+      if (Array.isArray(categories) && categories.length > 0) {
+        return categories;
+      }
+      const paginatedCategories = categories as unknown as { results?: BackendCategory[] };
+      if (Array.isArray(paginatedCategories?.results) && paginatedCategories.results.length > 0) {
+        return paginatedCategories.results;
+      }
+      return [DEFAULT_CATEGORY];
+    } catch {
+      return [DEFAULT_CATEGORY];
     }
-    const paginatedCategories = categories as unknown as { results?: BackendCategory[] };
-    if (Array.isArray(paginatedCategories?.results) && paginatedCategories.results.length > 0) {
-      return paginatedCategories.results;
-    }
-    return [DEFAULT_CATEGORY];
-  } catch {
-    return [DEFAULT_CATEGORY];
-  }
+  }, options);
 }
 
 export async function getTags() {

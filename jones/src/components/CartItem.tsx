@@ -20,7 +20,7 @@ export default function CartProductItem({
   if (!cartItem || !product) {
     return null;
   }
-  const productHref = `/product/${getPathString(product.slug || product.id)}`;
+  const productHref = `/p/${getPathString(product.slug || product.id)}`;
   return (
     <li
       className="cart__product"

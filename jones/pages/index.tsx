@@ -1,5 +1,6 @@
-import type { NextPage, GetServerSideProps } from "next";
+import type { NextPage, GetStaticProps } from "next";
 import dynamic from "next/dynamic";
+import SEO from "@Components/common/SEO";
 import type { ProductComponentType } from "src/types/shared";
 import type { BackendCategory } from "src/types/backend";
 import { defaultContent, type HomeContent, type SiteContent } from "src/data/defaultContent";
@@ -33,6 +34,10 @@ const Home: NextPage<HomePropTypes> = ({
 }) => {
   return (
     <>
+      <SEO
+        title="Shop Jones Merchandise"
+        description="Discover premium Print On Demand fashion, custom t-shirts, personalized accessories, and trending lifestyle products."
+      />
       <CollectionSection content={collectionSection} />
       {homeSections.latestProducts.enabled && (
         <ProductsSection
@@ -64,7 +69,7 @@ const Home: NextPage<HomePropTypes> = ({
   );
 };
 
-export const getServerSideProps: GetServerSideProps = async () => {
+export const getStaticProps: GetStaticProps = async () => {
   let products: ProductComponentType[] = [];
   let categories: BackendCategory[] = [];
   let featuredArticles: FeaturedArticleItem[] = [];
@@ -99,10 +104,7 @@ export const getServerSideProps: GetServerSideProps = async () => {
     const response = await fetch(`${baseUrl}/api/shop/cms/site-content/`, { cache: "no-store" });
     if (response.ok) {
       const data = (await response.json().catch(() => ({}))) as Partial<SiteContent>;
-      homeSections = {
-        ...defaultContent.home,
-        ...(data.home || {}),
-      } as HomeContent;
+      homeSections = (data.home as HomeContent) || defaultContent.home;
     }
   } catch (err) {
     console.error("[Home] Failed to fetch CMS content:", err);
@@ -133,6 +135,7 @@ export const getServerSideProps: GetServerSideProps = async () => {
       featuredArticles,
       homeSections,
     },
+    revalidate: 300,
   };
 };
 

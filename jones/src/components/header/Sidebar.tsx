@@ -118,9 +118,9 @@ export default function Sidebar() {
                 {isOpen && (
                   <ul className="sidebar__accordion-items">
                     {brands.map((brand) => (
-                      <li key={brand}>
-                        <Link href={`/brand/${getPathString(brand)}`}>
-                          <a onClick={() => setDialog(null)}>{brand}</a>
+                      <li key={brand.slug}>
+                        <Link href={`/brand/${brand.slug}`}>
+                          <a onClick={() => setDialog(null)}>{brand.name}</a>
                         </Link>
                       </li>
                     ))}

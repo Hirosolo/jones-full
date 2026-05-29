@@ -16,9 +16,6 @@ import ErrorBoundary from "@Components/ErrorBoundary";
 
 import { AuthProvider } from "@Contexts/AuthContext";
 import { UIProvider } from "@Contexts/UIContext";
-import { getCurrentUser } from "@Lib/api/auth";
-import { transformUserToUserType } from "@Lib/transformers";
-import type { UserType } from "src/types/shared";
 
 const DEFAULT_CURRENCY_RATES = [{ symbol: "USD", rate: 1 }];
 
@@ -34,11 +31,16 @@ function MyApp({ Component, pageProps }: AppProps) {
   return (
     <>
       <UIProvider currencyRates={DEFAULT_CURRENCY_RATES} announcementHidden={false}>
-        <AuthProvider currentUser={(pageProps as any).__user || { id: "guest", isAuth: false, wishlist: [], cart: [] }}>
+        <AuthProvider currentUser={{ id: "guest", isAuth: false, wishlist: [], cart: [] }}>
           {isAdmin ? (
-            <AdminLayout>
-              <Component {...pageProps} />
-            </AdminLayout>
+            <>
+              <Head>
+                <meta name="robots" content="noindex,nofollow" />
+              </Head>
+              <AdminLayout>
+                <Component {...pageProps} />
+              </AdminLayout>
+            </>
           ) : (
             <>
               <Head>
@@ -62,33 +64,5 @@ function MyApp({ Component, pageProps }: AppProps) {
     </>
   );
 }
-
-MyApp.getInitialProps = async ({ Component, ctx }: any) => {
-  let pageProps = {};
-  let user: UserType = { id: "guest", isAuth: false, wishlist: [], cart: [] };
-
-  // Try to fetch current user server-side
-  if (typeof window === "undefined") {
-    try {
-      const backendUser = await getCurrentUser();
-      if (backendUser) {
-        user = transformUserToUserType(backendUser);
-      }
-    } catch {
-      // Not authenticated — that's fine
-    }
-  }
-
-  if (Component.getInitialProps) {
-    pageProps = await Component.getInitialProps(ctx);
-  }
-
-  return {
-    pageProps: {
-      ...pageProps,
-      __user: user,
-    },
-  };
-};
 
 export default MyApp;

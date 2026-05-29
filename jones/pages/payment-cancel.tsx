@@ -1,12 +1,10 @@
-import Head from "next/head";
+import SEO from "@Components/common/SEO";
 
 export default function PaymentCancel() {
   return (
     <div className="page">
       <div className="page__container">
-        <Head>
-          <title>Payment Cancelled</title>
-        </Head>
+        <SEO title="Payment Cancelled" noindex />
         <h1 className="main-heading">Payment Cancelled</h1>
         <section>
           <p>
