@@ -21,7 +21,7 @@ import { ProductPlaceholderImg } from "src/constants";
 import { getPathString } from "src/utils";
 import { getResolvedBrandGroups } from "@Lib/api/catalog";
 
-function BrandPage({ categoryId }: { categoryId: string }) {
+function BrandPage({ brandTitle }: { brandTitle: string }) {
   const { products } = useProductsState();
   const count = products.length;
 
@@ -42,10 +42,14 @@ function BrandPage({ categoryId }: { categoryId: string }) {
     if (typeof window !== "undefined" && innerWidth > 992) setFilterActive(true);
   }, []);
 
+  useEffect(() => {
+    console.log("[BrandPage] Entered brand page:", brandTitle, "products:", products.length, products);
+  }, [brandTitle, products]);
+
   return (
     <>
-      <SEO title={categoryId} />
-      <Constraints allProductsCount={count} currentProductsCount={count} />
+      <SEO title={brandTitle} />
+      <Constraints allProductsCount={count} currentProductsCount={count} title={brandTitle} />
       <FilterSortSection toggleFilter={() => setFilterActive(!filterActive)} />
 
       <div className="results">
@@ -69,10 +73,12 @@ function BrandPage({ categoryId }: { categoryId: string }) {
 
 export default function BrandPageWithContext({
   categoryId,
+  brand,
   products,
   productImagePlaceholders,
 }: {
   categoryId: string;
+  brand?: { name: string; slug: string; logo?: string | null };
   products: ProductComponentType[];
   productImagePlaceholders: Record<string, string>;
 }) {
@@ -132,7 +138,7 @@ export default function BrandPageWithContext({
       preFilter={getQueryAsFilter()}
       products={products}
     >
-      <BrandPage categoryId={categoryId} />
+      <BrandPage brandTitle={brand?.name || categoryId} />
     </ProductsProvider>
   );
 }
@@ -141,23 +147,26 @@ export const getStaticPaths: GetStaticPaths = async () => {
   const brandGroups = await getResolvedBrandGroups();
   const paths = [
     ...Object.keys(brandGroups),
-    ...Object.values(brandGroups).flat(),
+    ...Object.values(brandGroups).flat().map((brand) => brand.slug),
   ].map((categoryId) => ({
     params: { categoryId: [getPathString(categoryId)] },
   }));
 
   return {
     paths,
-    fallback: false,
+    fallback: "blocking",
   };
 };
 
 export const getStaticProps: GetStaticProps = async function ({ params }) {
   const [category = "all"] = params?.categoryId as string[];
   let allProducts: ProductComponentType[] = [];
+  let brand: { name: string; slug: string; logo?: string | null } | undefined;
 
   try {
+    console.log("[BrandPage] Fetching products for brand:", category);
     const data = await getProductsByBrand(category);
+    brand = data.brand;
     allProducts = data.products;
   } catch (err) {
     console.error("[BrandPage] Failed to fetch brand products:", err);
@@ -176,7 +185,9 @@ export const getStaticProps: GetStaticProps = async function ({ params }) {
       products: allProducts,
       count: allProducts.length,
       categoryId: category ?? "",
+      brand: brand ? { ...brand, logo: brand.logo ?? null } : undefined,
       productImagePlaceholders,
     },
+    revalidate: 300,
   };
 };

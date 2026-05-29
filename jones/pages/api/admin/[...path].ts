@@ -315,7 +315,7 @@ function buildBrandGroups(brands: AdminBrand[], drafts: BrandGroupDraft[] = []) 
           id: item.id,
           name: item.name,
           slug: item.slug,
-          url: `/b/${item.slug}`,
+          url: `/brand/${item.slug}`,
           order: Number(item.order || 0),
         })),
       }

@@ -21,7 +21,7 @@ import { getCategories } from "@Lib/api/catalog";
 import { ProductPlaceholderImg } from "src/constants";
 import { getPathString } from "src/utils";
 
-function CategoryPage({ categoryTitle }: { categoryTitle: string }) {
+function CategoryPage({ categoryId }: { categoryId: string }) {
   const { products } = useProductsState();
   const count = products.length;
 
@@ -44,8 +44,8 @@ function CategoryPage({ categoryTitle }: { categoryTitle: string }) {
 
   return (
     <>
-      <SEO title={categoryTitle} />
-      <Constraints allProductsCount={count} currentProductsCount={count} title={categoryTitle} />
+      <SEO title={categoryId} />
+      <Constraints allProductsCount={count} currentProductsCount={count} />
       <FilterSortSection toggleFilter={() => setFilterActive(!filterActive)} />
 
       <div className="results">
@@ -69,12 +69,10 @@ function CategoryPage({ categoryTitle }: { categoryTitle: string }) {
 
 export default function CategoryPageWithContext({
   categoryId,
-  category,
   products,
   productImagePlaceholders,
 }: {
   categoryId: string;
-  category?: { name: string; slug: string; desc?: string; image?: string };
   products: ProductComponentType[];
   productImagePlaceholders: Record<string, string>;
 }) {
@@ -134,7 +132,7 @@ export default function CategoryPageWithContext({
       preFilter={getQueryAsFilter()}
       products={products}
     >
-      <CategoryPage categoryTitle={category?.name || categoryId} />
+      <CategoryPage categoryId={categoryId} />
     </ProductsProvider>
   );
 }
@@ -162,8 +160,8 @@ export const getStaticPaths: GetStaticPaths = async () => {
 };
 
 export const getStaticProps: GetStaticProps = async function ({ params }) {
-  const [categorySlug = "all"] = params?.categoryId as string[];
-  let resolvedCategory = categorySlug;
+  const [category = "all"] = params?.categoryId as string[]; 
+  let resolvedCategory = category;
 
   try {
     const cats = await getCategories();
@@ -176,11 +174,9 @@ export const getStaticProps: GetStaticProps = async function ({ params }) {
   }
 
   let products: ProductComponentType[] = [];
-  let categoryData: { name: string; slug: string; desc?: string; image?: string } | undefined;
 
   try {
     const data = await getProductsByCategory(resolvedCategory);
-    categoryData = data.category;
     products = data.products;
   } catch (err) {
     console.error("[CategoryPage] Failed to fetch category products:", err);
@@ -199,7 +195,6 @@ export const getStaticProps: GetStaticProps = async function ({ params }) {
       products,
       count: products.length,
       categoryId: resolvedCategory ?? "",
-      category: categoryData,
       productImagePlaceholders,
     },
     revalidate: 300,

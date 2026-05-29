@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 
-import { getBrandGroups, normalizeBrandGroups } from "@Lib/api/catalog";
+import { getBrandGroups, normalizeBrandGroups, type BrandGroupItem } from "@Lib/api/catalog";
 
 export default function useBrandGroups() {
-  const [brandGroups, setBrandGroups] = useState<Record<string, string[]>>({});
+  const [brandGroups, setBrandGroups] = useState<Record<string, BrandGroupItem[]>>({});
   const [loading, setLoading] = useState(true);
 
   const refreshBrandGroups = useCallback(async () => {

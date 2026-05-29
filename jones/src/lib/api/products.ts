@@ -18,19 +18,18 @@ export async function getProductsByCategory(
   slug: string,
   params?: { page?: number; page_size?: number; brand?: string; color?: string; size?: string }
 ): Promise<{ category: { name: string; slug: string; desc?: string; image?: string }; products: ProductComponentType[]; total: number }> {
-  const data = await http.get<BackendCategoryProductResponse & { items?: BackendCategoryProductResponse; total?: number }>("/api/shop/category-product-list/", {
+  const data = await http.get<BackendCategoryProductResponse>("/api/shop/category-product-list/", {
     searchParams: { slug, ...params },
   });
-  const payload = data && "items" in data && data.items ? data.items : data;
   return {
     category: {
-      name: payload.category?.name || slug,
-      slug: payload.category?.slug || slug,
-      desc: payload.category?.desc,
-      image: payload.category?.image,
+      name: data.category?.name || slug,
+      slug: data.category?.slug || slug,
+      desc: data.category?.desc,
+      image: data.category?.image,
     },
-    products: (payload.products || []).map(transformProduct),
-    total: payload.total ?? (payload.products?.length || 0),
+    products: (data.products || []).map(transformProduct),
+    total: data.products?.length || 0,
   };
 }
 

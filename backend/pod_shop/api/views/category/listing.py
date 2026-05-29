@@ -7,7 +7,6 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework.exceptions import NotFound
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from pod_shop.api.serializers import CategoryListSerializer, ProductCategoryListSerializer, ProductSerializer
@@ -25,7 +24,6 @@ class CategoriesListView(ListAPIView):
     """
     serializer_class = CategoryListSerializer
     permission_classes = [AllowAny]
-    pagination_class = None
 
     def get_queryset(self):
         return Category.objects.order_by('order')
@@ -88,12 +86,6 @@ class CategoryProductsListView(APIView):
         p = Product.objects.filter(
             status='A',
             category=c
-        ).select_related(
-            'category',
-            'brand',
-        ).prefetch_related(
-            'tags',
-            'images',
         ).order_by('-created_at')
 
         # Lọc theo brand
@@ -123,14 +115,13 @@ class CategoryProductsListView(APIView):
 
         p = p.distinct()
 
-        distinct_products = p.distinct()
-        serializer = ProductSerializer(distinct_products, many=True, context={'user': user, 'request': request})
+        # Phân trang
+        paginator = ItemsListPagination()
+        page = paginator.paginate_queryset(p, request)
+        serializer = ProductSerializer(page, many=True, context={'user': user, 'request': request})
 
-        return Response({
+        return paginator.get_paginated_response({
             'category': ProductCategoryListSerializer(c).data,
-            'products': serializer.data,
-            'total': distinct_products.count(),
-            'current': 1,
-            'num_pages': 1,
+            'products': serializer.data
         })
     

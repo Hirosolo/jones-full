@@ -7,15 +7,13 @@ import { BiCaretDown } from "react-icons/bi";
 import { IoIosArrowForward } from "react-icons/io";
 
 import Logo from "@Components/common/Logo";
-import ToolTip from "@Components/common/ToolTip";
 import { getPathString } from "src/utils";
 import { getCategories } from "@Lib/api/catalog";
 import type { BackendCategory } from "src/types/backend";
 import useBrandGroups from "@Hooks/useBrandGroups";
 
 import useScrollTop from "@Hooks/useScrollTop";
-import { DialogType, useCurrencyFormatter, useDialog } from "@Contexts/UIContext";
-import { useAuthState } from "@Contexts/AuthContext";
+import { DialogType, useDialog } from "@Contexts/UIContext";
 
 type DropdownMode = "categories" | "brands" | null;
 
@@ -32,11 +30,6 @@ export default function HeaderSection() {
   const scrollTop = useScrollTop();
   const headerRef = useRef<HTMLElement>(null);
   const lastScrollTopRef = useRef(0);
-  const format = useCurrencyFormatter();
-  const { user } = useAuthState();
-  // cart removed from UI — keep user reference for other features
-  const cartCount = 0;
-  const cartTotal = 0;
 
   useEffect(() => {
     const mainBanner = document.getElementById("main-banner");
@@ -82,9 +75,9 @@ export default function HeaderSection() {
   useEffect(() => {
     let active = true;
     getCategories()
-      .then((items) => {
+      .then((categoryItems) => {
         if (!active) return;
-        setCategories(items);
+        setCategories(categoryItems);
       })
       .catch(() => {
         if (!active) return;
@@ -116,7 +109,6 @@ export default function HeaderSection() {
       setDropdownMode(mode);
       if (mode === "brands") {
         void refreshBrandGroups();
-        // Initialize with the first group if none active
         const groups = Object.keys(brandGroups);
         if (groups.length > 0 && !activeBrandsGroup) {
           setActiveBrandsGroup(groups[0]);
@@ -273,9 +265,9 @@ export default function HeaderSection() {
                   <div className="header__brands-content-item">Loading database brands...</div>
                 ) : activeBrandsGroup && brandGroups[activeBrandsGroup]?.length ? (
                   brandGroups[activeBrandsGroup].map((brand) => (
-                    <div key={brand} className="header__brands-content-item">
-                      <Link href={`/brand/${getPathString(brand)}`}>
-                        <a>{brand}</a>
+                    <div key={brand.slug} className="header__brands-content-item">
+                      <Link href={brand.url || `/brand/${brand.slug || getPathString(brand.name)}`}>
+                        <a>{brand.name}</a>
                       </Link>
                     </div>
                   ))

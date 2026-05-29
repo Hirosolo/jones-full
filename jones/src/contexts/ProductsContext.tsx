@@ -4,6 +4,7 @@ import {
   createContext,
   ReactNode,
   useContext,
+  useEffect,
   useState,
   useRef,
   useImperativeHandle,
@@ -230,6 +231,19 @@ function ProductsProvider(
   };
 
   const [productListing, setProductListing] = useState(getFilteredListings());
+
+  useEffect(() => {
+    filterState.current = {
+      ..._filterState,
+      ...preFilter,
+    };
+    sortByRef.current = filterState.current.sort ?? "";
+    setProductListing(getFilteredListings());
+
+    if (sortByRef.current) {
+      sortListings(sortByRef.current);
+    }
+  }, [products]);
 
   useImperativeHandle(ref, () => ({
     updateFilterState: (preFilter: Partial<filterStateType>) => {

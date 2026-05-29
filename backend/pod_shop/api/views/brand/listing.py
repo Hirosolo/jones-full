@@ -55,7 +55,7 @@ class BrandGroupsView(APIView):
                 'id': b.id,
                 'name': b.name,
                 'slug': b.slug,
-                'url': f'/b/{b.slug}',
+                    'url': f'/brand/{b.slug}',
                 'order': b.order,
             })
 
@@ -135,6 +135,12 @@ class BrandProductsListView(APIView):
         p = Product.objects.filter(
             status='A',
             brand=b
+        ).select_related(
+            'category',
+            'brand',
+        ).prefetch_related(
+            'tags',
+            'images',
         ).order_by('-created_at')
 
         # Lọc theo category
@@ -164,11 +170,12 @@ class BrandProductsListView(APIView):
 
         p = p.distinct()
 
-        # Phân trang danh sách sản phẩm
-        paginator = ItemsListPagination()
-        page = paginator.paginate_queryset(p, request)
-        serializer = ProductSerializer(page, many=True, context={'user': user, 'request': request})
-        return paginator.get_paginated_response({
+        distinct_products = p.distinct()
+        serializer = ProductSerializer(distinct_products, many=True, context={'user': user, 'request': request})
+        return Response({
             'brand': ProductBrandListSerializer(b).data,
-            'products': serializer.data
+            'products': serializer.data,
+            'total': distinct_products.count(),
+            'current': 1,
+            'num_pages': 1,
         })
