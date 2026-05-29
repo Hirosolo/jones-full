@@ -44,6 +44,43 @@ export function cloudinaryUpload(files: FileList): CloudinaryBatchResultType {
 export const compareObjects = (obj1: object, obj2: object) =>
   Object.is(JSON.stringify(obj1), JSON.stringify(obj2));
 
+export function buildProductListingHref(
+  params: Record<string, string | number | Array<string | number> | undefined> = {}
+) {
+  const query = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === "") {
+      return;
+    }
+
+    if (key === "price" && Array.isArray(value)) {
+      const [minPrice, maxPrice] = value;
+      if (minPrice !== undefined && minPrice !== null && minPrice !== "") {
+        query.set("min_price", String(minPrice));
+      }
+      if (maxPrice !== undefined && maxPrice !== null && maxPrice !== "") {
+        query.set("max_price", String(maxPrice));
+      }
+      return;
+    }
+
+    if (Array.isArray(value)) {
+      value.forEach((item) => {
+        if (item !== undefined && item !== null && item !== "") {
+          query.append(key, String(item));
+        }
+      });
+      return;
+    }
+
+    query.set(key, String(value));
+  });
+
+  const search = query.toString();
+  return search ? `/p?${search}` : "/p";
+}
+
 export const getPathString = (url: string) =>
   url
     .toLowerCase()

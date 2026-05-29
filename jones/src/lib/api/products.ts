@@ -111,6 +111,11 @@ export async function getLatestProducts(): Promise<ProductComponentType[]> {
   return (data || []).map(transformProduct);
 }
 
+export async function getAllProducts(): Promise<ProductComponentType[]> {
+  const data = await http.get<BackendProduct[]>("/api/shop/products/");
+  return (data || []).map(transformProduct);
+}
+
 export async function getFeaturedProducts(): Promise<ProductComponentType[]> {
   const data = await http.get<BackendProduct[]>("/api/shop/featured-products/");
   return (data || []).map(transformProduct);

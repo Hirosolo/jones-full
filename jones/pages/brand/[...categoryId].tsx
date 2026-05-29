@@ -1,201 +1,23 @@
-import type { ProductComponentType } from "src/types/shared";
-import { useEffect, useState, useRef } from "react";
-import dynamic from "next/dynamic";
-import { Router, useRouter } from "next/router";
-import { Gender } from "src/types/shared";
-import { GetStaticPaths, GetStaticProps } from "next";
+import type { GetStaticPaths, GetStaticProps } from "next";
 
-import SEO from "@Components/common/SEO";
-import Constraints from "@Components/products/constraints";
-import ProductsGrid from "@Components/products/ProductsGrid";
+import { buildProductListingHref, getPathString } from "src/utils";
 
-import { HIGHEST_PRICE } from "src/constants";
-import { useDialog } from "@Contexts/UIContext";
-import ProductsProvider, {
-  filterStateType,
-  useProductsState,
-} from "@Contexts/ProductsContext";
-import { getProductsByBrand } from "@Lib/api/products";
-import { ProductPlaceholderImg } from "src/constants";
-import { getPathString } from "src/utils";
-import { getResolvedBrandGroups } from "@Lib/api/catalog";
-
-const FilterAccordion = dynamic(
-  () => import("@Components/products/filter/FilterAccordion"),
-  { ssr: false }
-);
-const FilterSortSection = dynamic(
-  () => import("@Components/products/FilterSortSection"),
-  { ssr: false }
-);
-
-function BrandPage({ brandTitle }: { brandTitle: string }) {
-  const { products } = useProductsState();
-  const count = products.length;
-
-  const [filterActive, setFilterActive] = useState(false);
-  const { currentDialog } = useDialog();
-
-  useEffect(() => {
-    const toggleScroll = () => {
-      if (typeof window !== "undefined" && innerWidth <= 992)
-        document.body.style.overflow = filterActive ? "hidden" : "auto";
-    };
-    toggleScroll();
-    Router.events.on("routeChangeComplete", toggleScroll);
-    return () => Router.events.off("routeChangeComplete", toggleScroll);
-  }, [filterActive, currentDialog]);
-
-  useEffect(() => {
-    if (typeof window !== "undefined" && innerWidth > 992) setFilterActive(true);
-  }, []);
-
-  useEffect(() => {
-    console.log("[BrandPage] Entered brand page:", brandTitle, "products:", products.length, products);
-  }, [brandTitle, products]);
-
-  return (
-    <>
-      <SEO title={brandTitle} />
-      <Constraints allProductsCount={count} currentProductsCount={count} />
-      <FilterSortSection toggleFilter={() => setFilterActive(!filterActive)} />
-
-      <div className="results">
-        <FilterAccordion
-          active={filterActive}
-          setState={() => setFilterActive(false)}
-        />
-
-        <div
-          className={
-            "results__container" +
-            (filterActive ? " results__container--filter" : "")
-          }
-        >
-          <ProductsGrid products={products} />
-        </div>
-      </div>
-    </>
-  );
+export default function BrandRedirectPage() {
+  return null;
 }
 
-export default function BrandPageWithContext({
-  categoryId,
-  brand,
-  products,
-  productImagePlaceholders,
-}: {
-  categoryId: string;
-  brand?: { name: string; slug: string; logo?: string | null };
-  products: ProductComponentType[];
-  productImagePlaceholders: Record<string, string>;
-}) {
-  const router = useRouter();
-  const ref = useRef<{ updateFilterState: Function }>(null);
+export const getStaticPaths: GetStaticPaths = async () => ({
+  paths: [],
+  fallback: "blocking",
+});
 
-  const getQueryAsFilter = () => {
-    const queryAsFilter: Partial<filterStateType> = {
-      price: [0, HIGHEST_PRICE],
-    };
-
-    Object.keys(router.query).forEach((param) => {
-      const value = router.query[param];
-      if (
-        param == "categoryId" &&
-        value &&
-        value[0] &&
-        Gender[value[0].toUpperCase() as keyof typeof Gender]
-      ) {
-        queryAsFilter["gender"] = value[0].toUpperCase() as Gender;
-        if (value[1]) queryAsFilter["search"] = value[1];
-      } else if (
-        param == "categoryId" &&
-        (value == "colorways" || value == "new")
-      ) {
-        queryAsFilter["page"] = value;
-      }
-      if (param == "size" || param == "year") {
-        queryAsFilter[param] = Array.isArray(value)
-          ? value.map((v) => Number(v))
-          : [Number(value)];
-      }
-      if (param == "min_price" && queryAsFilter["price"]) {
-        queryAsFilter["price"][0] = Number(value);
-      }
-      if (param == "max_price" && queryAsFilter["price"]) {
-        queryAsFilter["price"][1] = Number(value);
-      }
-      if (param == "color" || param == "height") {
-        queryAsFilter[param] = Array.isArray(value) ? value : [value ?? ""];
-      }
-      if (param == "sort" && typeof value == "string") {
-        queryAsFilter[param] = value;
-      }
-    });
-    return queryAsFilter;
-  };
-
-  useEffect(() => {
-    ref.current?.updateFilterState?.(getQueryAsFilter());
-  });
-
-  return (
-    <ProductsProvider
-      productImagePlaceholders={productImagePlaceholders}
-      ref={ref}
-      preFilter={getQueryAsFilter()}
-      products={products}
-    >
-      <BrandPage brandTitle={brand?.name || categoryId} />
-    </ProductsProvider>
-  );
-}
-
-export const getStaticPaths: GetStaticPaths = async () => {
-  const brandGroups = await getResolvedBrandGroups();
-  const paths = [
-    ...Object.keys(brandGroups),
-    ...Object.values(brandGroups).flat().map((brand) => brand.slug),
-  ].map((categoryId) => ({
-    params: { categoryId: [getPathString(categoryId)] },
-  }));
+export const getStaticProps: GetStaticProps = async ({ params }) => {
+  const [brand = "all"] = (params?.categoryId as string[]) || [];
 
   return {
-    paths,
-    fallback: "blocking",
-  };
-};
-
-export const getStaticProps: GetStaticProps = async function ({ params }) {
-  const [category = "all"] = params?.categoryId as string[];
-  let allProducts: ProductComponentType[] = [];
-  let brand: { name: string; slug: string; logo?: string | null } | undefined;
-
-  try {
-    console.log("[BrandPage] Fetching products for brand:", category);
-    const data = await getProductsByBrand(category);
-    brand = data.brand;
-    allProducts = data.products;
-  } catch (err) {
-    console.error("[BrandPage] Failed to fetch brand products:", err);
-  }
-
-  const productImagePlaceholders = allProducts.reduce<Record<string, string>>(
-    (acc, product) => {
-      acc[product.id] = ProductPlaceholderImg;
-      return acc;
+    redirect: {
+      destination: buildProductListingHref({ brand: getPathString(brand) }),
+      permanent: false,
     },
-    {}
-  );
-
-  return {
-    props: {
-      products: allProducts,
-      count: allProducts.length,
-      categoryId: category ?? "",
-      productImagePlaceholders,
-      ...(brand ? { brand: { ...brand, logo: brand.logo ?? null } } : {}),
-    },
-    revalidate: 300,
   };
 };

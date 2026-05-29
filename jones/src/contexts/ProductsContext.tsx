@@ -13,7 +13,7 @@ import {
 } from "react";
 
 import { HIGHEST_PRICE } from "src/constants";
-import { compareObjects } from "src/utils";
+import { compareObjects, buildProductListingHref, getPathString } from "src/utils";
 import Router from "next/router";
 
 export interface filterStateType {
@@ -21,6 +21,8 @@ export interface filterStateType {
   sort?: string;
   page: string;
   gender: string;
+  category: string;
+  brand: string;
   color: string[];
   size: number[];
   height: string[];
@@ -32,6 +34,8 @@ export type filterStateKeys = keyof filterStateType;
 const _filterState: filterStateType = {
   page: "",
   gender: "",
+  category: "",
+  brand: "",
   color: [],
   size: [],
   height: [],
@@ -98,6 +102,14 @@ const getSearchPredicate =
     return pattern.test(product.title.toLowerCase());
   };
 
+const getCategoryPredicate =
+  (category: string) => (product: ProductComponentType) =>
+    getPathString(product.categoryName || "") === category;
+
+const getBrandPredicate =
+  (brand: string) => (product: ProductComponentType) =>
+    getPathString(product.brandName || "") === brand;
+
 interface FilterPredicateType<T> {
   (value: T, index: number, array: T[]): boolean | unknown;
 }
@@ -112,6 +124,8 @@ const actions: { [type: string]: Function } = {
   page: () => () => true,
   search: getSearchPredicate,
   gender: getGenderPredicate,
+  category: getCategoryPredicate,
+  brand: getBrandPredicate,
   color: getColorPredicate,
   size: getSizesPredicate,
   height: getHeightPredicate,
@@ -142,25 +156,11 @@ function ProductsProvider(
     ...preFilter,
   });
   const sortByRef = useRef("");
-  let params = new URLSearchParams();
-
   const getFilteredListings = () => {
-    params = new URLSearchParams();
     const combinedPredicates = compose<ProductComponentType>(
       ...Object.keys(filterState.current).map((type) => {
         const value =
           filterState.current[type as keyof typeof filterState.current];
-        if (type != "gender" && type != "page" && type != "search") {
-          if (Array.isArray(value)) {
-            if (type == "price") {
-              params.append("min_price", value[0].toString());
-              params.append("max_price", value[1].toString());
-            } else
-              value.forEach((value) => params.append(type, value.toString()));
-          } else {
-            params.append(type, ((value as string) ?? "").toString());
-          }
-        }
         if (type != "sort" && value && value.length) {
           return actions[type](value);
         }
@@ -174,11 +174,14 @@ function ProductsProvider(
   const filterListings = (action: { [type: string]: unknown }) => {
     filterState.current = { ...filterState.current, ...action };
     setProductListing(getFilteredListings());
-    const { search, gender, page } = filterState.current;
-    const pageId = gender.toLowerCase() || page;
 
     Router.replace(
-      `/category/${pageId}${search ? "/" + search : ""}?${params.toString()}`,
+      buildProductListingHref(
+        filterState.current as unknown as Record<
+          string,
+          string | number | Array<string | number> | undefined
+        >
+      ),
       undefined,
       {
         scroll: false,
@@ -188,15 +191,23 @@ function ProductsProvider(
   };
 
   const clearFilters = () => {
-    const { gender, page } = filterState.current;
-    filterState.current = { ..._filterState, gender, page };
-    setProductListing(products.filter(getGenderPredicate(gender)));
-    const pageId = gender.toLowerCase() || page;
+    const { category, brand } = filterState.current;
+    filterState.current = { ..._filterState, category, brand };
+    setProductListing(getFilteredListings());
 
-    Router.replace(`/category/${pageId}`, undefined, {
+    Router.replace(
+      buildProductListingHref(
+        filterState.current as unknown as Record<
+          string,
+          string | number | Array<string | number> | undefined
+        >
+      ),
+      undefined,
+      {
       scroll: false,
       shallow: true,
-    });
+      }
+    );
   };
 
   const sortListings = (sortBy: string) => {

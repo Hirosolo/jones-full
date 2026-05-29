@@ -10,7 +10,7 @@ export default function Constraints({
   isSearch,
 }: PropTypes) {
   const router = useRouter();
-  const { search, q, categoryId } = router.query;
+  const { search, q, categoryId, category, brand } = router.query;
   const { filterState, clearFilters } = useProductsState();
   const { color, size, height, year } = filterState;
   const clearAllVisible = !!(
@@ -23,6 +23,10 @@ export default function Constraints({
     new: "New Arrivals",
     best: "Best Sellers",
   }[Array.isArray(categoryId) ? categoryId[0] : categoryId ?? ""];
+  const taxonomyTitle =
+    (Array.isArray(category) ? category[0] : category) ||
+    (Array.isArray(brand) ? brand[0] : brand) ||
+    title;
 
   return (
     <section className="constraints">
@@ -32,7 +36,7 @@ export default function Constraints({
           {isSearch ? (
             <>&ldquo;{search || q}&rdquo;</>
           ) : (
-            title ?? filterState.gender.toLowerCase()
+            taxonomyTitle ?? filterState.gender.toLowerCase()
           )}
         </h1>
         {currentProductsCount ? (
