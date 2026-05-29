@@ -170,11 +170,40 @@ def _merge_dict(base, incoming):
     return result
 
 
+def _normalize_footer_payload_shape(existing_footer):
+    """Normalize footer keys to camelCase regardless of parser key style."""
+    if not isinstance(existing_footer, dict):
+        return {}
+
+    normalized = dict(existing_footer)
+
+    # Top-level aliases produced by camel_case parser.
+    if 'aboutLinks' not in normalized and 'about_links' in normalized:
+        normalized['aboutLinks'] = normalized.get('about_links')
+    if 'quickLinks' not in normalized and 'quick_links' in normalized:
+        normalized['quickLinks'] = normalized.get('quick_links')
+    if 'socialLinks' not in normalized and 'social_links' in normalized:
+        normalized['socialLinks'] = normalized.get('social_links')
+
+    gutter = normalized.get('gutter')
+    if isinstance(gutter, dict):
+        gutter_normalized = dict(gutter)
+        if 'termsLinks' not in gutter_normalized and 'terms_links' in gutter_normalized:
+            gutter_normalized['termsLinks'] = gutter_normalized.get('terms_links')
+        if 'languageLabel' not in gutter_normalized and 'language_label' in gutter_normalized:
+            gutter_normalized['languageLabel'] = gutter_normalized.get('language_label')
+        if 'currencyLabelPrefix' not in gutter_normalized and 'currency_label_prefix' in gutter_normalized:
+            gutter_normalized['currencyLabelPrefix'] = gutter_normalized.get('currency_label_prefix')
+        normalized['gutter'] = gutter_normalized
+
+    return normalized
+
+
 def _ensure_footer_payload(payload):
     if not isinstance(payload, dict):
         payload = {}
 
-    existing_footer = payload.get('footer')
+    existing_footer = _normalize_footer_payload_shape(payload.get('footer'))
     has_new_shape = isinstance(existing_footer, dict) and all(
         key in existing_footer for key in ('contact', 'aboutLinks', 'quickLinks', 'newsletter', 'socialLinks', 'gutter')
     )

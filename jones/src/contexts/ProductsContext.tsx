@@ -191,23 +191,13 @@ function ProductsProvider(
   };
 
   const clearFilters = () => {
-    const { category, brand } = filterState.current;
-    filterState.current = { ..._filterState, category, brand };
+    filterState.current = { ..._filterState };
     setProductListing(getFilteredListings());
 
-    Router.replace(
-      buildProductListingHref(
-        filterState.current as unknown as Record<
-          string,
-          string | number | Array<string | number> | undefined
-        >
-      ),
-      undefined,
-      {
+    Router.replace("/p", undefined, {
       scroll: false,
       shallow: true,
-      }
-    );
+    });
   };
 
   const sortListings = (sortBy: string) => {

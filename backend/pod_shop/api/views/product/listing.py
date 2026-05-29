@@ -216,25 +216,17 @@ def weekly_bestsellers_view(request):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def all_products_view(request):
-    """Return all active products for the storefront listing page."""
-    from django.core.cache import cache
-
-    cache_key = 'all_products_api_v1'
-    cached = cache.get(cache_key)
-    if cached is not None:
-        return Response(cached)
+    """Return the newest active products from the database."""
 
     qs = (
         Product.objects.filter(status='A')
         .select_related('category', 'brand')
         .prefetch_related('tags', 'images')
         .order_by('-created_at')
+        [:16]
     )
 
     data = ProductSerializer(qs, many=True, context={'user': request.user, 'request': request}).data
-
-    if data:
-                cache.set(cache_key, data, 60 * 10)
 
     return Response(data)
 
