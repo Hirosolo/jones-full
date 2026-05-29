@@ -3,7 +3,7 @@
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 
@@ -30,7 +30,7 @@ from pod_shop.models import Product, WishList
     description="Kiểm tra xem sản phẩm có trong danh sách yêu thích của người dùng hay không."
 )
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def check_item_wishlist(request):
     """
     Kiểm tra xem sản phẩm có trong danh sách yêu thích của người dùng hay không.

@@ -3,7 +3,7 @@
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from profiles.api.serializers import ShippingAddressSerializer
@@ -49,7 +49,7 @@ from profiles.models import Profile, Shipping
     }
 )
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def manage_shipping_address(request):
     """
     Create or update shipping address based on presence of shipping_id in request data
@@ -139,7 +139,7 @@ def manage_shipping_address(request):
     }
 )
 @api_view(['DELETE'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def delete_shipping_address(request, pk):
     """
     Soft delete a shipping address (mark as removed)

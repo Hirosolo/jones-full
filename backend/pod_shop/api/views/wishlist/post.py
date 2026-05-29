@@ -3,7 +3,7 @@
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from pod_shop.models import WishList, Product
@@ -45,7 +45,7 @@ from pod_shop.models import WishList, Product
 
 )
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def action_to_wishlist(request):
     """
     Thêm hoặc xóa sản phẩm khỏi danh sách yêu thích của người dùng.

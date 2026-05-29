@@ -3,7 +3,7 @@
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from profiles.api.serializers import ShippingAddressSerializer
@@ -15,7 +15,7 @@ from profiles.models import Profile, Shipping
     description="Lấy danh sách địa chỉ giao hàng của người dùng",
 )
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def get_shipping_addresses(request):
     """
     Get user's shipping addresses using JWT token authentication.
