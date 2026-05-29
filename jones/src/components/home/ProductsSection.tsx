@@ -38,7 +38,7 @@ export default function ProductsSection({
   return (
     <section className="products-section">
       <div className="products-section__container">
-        <h2 className="products-section__heading">#shop {title}</h2>
+        <h2 className="products-section__heading">{title}</h2>
         {subtitle ? <p className="products-section__subheading">{subtitle}</p> : null}
         <ul ref={listRef} className="products-section__products">
           {productsComponent}
