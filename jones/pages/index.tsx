@@ -1,4 +1,4 @@
-import type { NextPage, GetServerSideProps } from "next";
+import type { NextPage, GetStaticProps } from "next";
 import dynamic from "next/dynamic";
 import SEO from "@Components/common/SEO";
 import type { ProductComponentType } from "src/types/shared";
@@ -70,9 +70,7 @@ const Home: NextPage<HomePropTypes> = ({
   );
 };
 
-export const getServerSideProps: GetServerSideProps = async ({ res }) => {
-  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
-
+export const getStaticProps: GetStaticProps = async () => {
   let latestProducts: ProductComponentType[] = [];
   let bestSellerProducts: ProductComponentType[] = [];
   let categories: BackendCategory[] = [];
@@ -137,6 +135,7 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
       featuredArticles,
       homeSections,
     },
+    revalidate: 120,
   };
 };
 

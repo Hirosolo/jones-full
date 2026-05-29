@@ -21,8 +21,8 @@ export default function ProductsSection({
       {...product}
       key={`${product.id}-${index}`}
       blurDataUrl={productImageDataUrls[product.id]}
-      priority
-      loading="eager"
+      priority={false}
+      loading="lazy"
     />
   ));
   const listRef = useRef<HTMLUListElement>(null);

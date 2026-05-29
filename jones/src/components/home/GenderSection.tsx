@@ -79,8 +79,8 @@ export default function GenderSection({ categories, content }: GenderSectionProp
             objectPosition="bottom"
             layout="fill"
             src={bannerImage}
-            priority
             loading="eager"
+            sizes="(max-width: 768px) 92vw, 36vw"
           />
           <h3 className="gender__text-overlay">
             {content.title}
@@ -91,7 +91,14 @@ export default function GenderSection({ categories, content }: GenderSectionProp
             <div key={className} className={"gender__block " + className}>
               <Link href={href}>
                 <a className="gender__block-link">
-                  <Image alt="" layout="fill" src={imgSource} objectFit="cover" priority loading="eager" />
+                  <Image
+                    alt=""
+                    layout="fill"
+                    src={imgSource}
+                    objectFit="cover"
+                    loading="eager"
+                    sizes="(max-width: 768px) 44vw, (max-width: 1200px) 24vw, 18vw"
+                  />
                   <h3 className="gender__block-title">
                     <span>{title}</span>
                   </h3>

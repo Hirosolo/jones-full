@@ -92,8 +92,8 @@ export default function CollectionSection({ content }: CollectionSectionProps) {
                     layout="fill"
                     src={brandGalleryImages[group] || brandGalleryImages.Other}
                     objectFit="cover"
-                    priority
                     loading="eager"
+                    sizes="(max-width: 768px) 80vw, (max-width: 1200px) 42vw, 30vw"
                   />
                   <div className="collections__block-content">
                     <h3 className="collections__block-title">{group}</h3>

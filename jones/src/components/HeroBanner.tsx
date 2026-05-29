@@ -203,7 +203,7 @@ export default function HeroBanner() {
             </div>
 
             <div className="banner__main">
-              {!!bannerRef.current && activeSlide ? (
+              {activeSlide ? (
                 <>
                   <div className="banner__content banner__content--active">
                     <div className="banner__headings">
@@ -237,6 +237,7 @@ export default function HeroBanner() {
                         height={activeSlide.imageSrc.height}
                         src={activeSlide.imageSrc}
                         priority
+                        sizes="(max-width: 768px) 72vw, (max-width: 1200px) 52vw, 44vw"
                         alt={activeSlide.title}
                       />
                     </div>
