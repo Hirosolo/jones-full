@@ -8,6 +8,7 @@ import { BiCaretDown } from "react-icons/bi";
 import Form from "@Components/common/Form";
 import { buildCategoriesList } from "./MenuLists";
 import { getPathString } from "src/utils";
+import { buildProductListingHref } from "src/utils";
 import { getCategories } from "@Lib/api/catalog";
 import type { BackendCategory } from "src/types/backend";
 import useBrandGroups from "@Hooks/useBrandGroups";
@@ -119,7 +120,7 @@ export default function Sidebar() {
                   <ul className="sidebar__accordion-items">
                     {brands.map((brand) => (
                       <li key={brand.slug}>
-                        <Link href={`/brand/${brand.slug}`}>
+                        <Link href={buildProductListingHref({ brand: brand.slug })}>
                           <a onClick={() => setDialog(null)}>{brand.name}</a>
                         </Link>
                       </li>

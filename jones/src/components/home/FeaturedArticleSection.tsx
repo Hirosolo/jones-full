@@ -85,6 +85,8 @@ export default function FeaturedArticleSection({ content, articles }: FeaturedAr
                       layout="fill"
                       src={article.featuredImage || "/assets/images/other-banner-vertical.png"}
                       objectFit="cover"
+                      priority
+                      loading="eager"
                     />
                   </div>
                   <div className="featured-articles__body">

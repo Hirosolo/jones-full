@@ -32,6 +32,8 @@ export default function Product(props: ProductComponentType) {
     id,
     slug,
     blurDataUrl,
+    priority = false,
+    loading,
   } = props;
 
   const format = useCurrencyFormatter();
@@ -96,6 +98,8 @@ export default function Product(props: ProductComponentType) {
                   blurDataURL={blurDataUrl || ProductPlaceholderImg}
                   placeholder="blur"
                   layout="fill"
+                  priority={priority}
+                  loading={loading}
                   sizes={small ? "(max-width: 640px) 45vw, 18rem" : "(max-width: 640px) 90vw, (max-width: 992px) 45vw, (max-width: 1200px) 30vw, 25vw"}
                   className={clsx("product__image-img", "product__image-img--active")}
                   objectFit="contain"

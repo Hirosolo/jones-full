@@ -119,6 +119,8 @@ export type UserType = Partial<User> & {
 export interface ProductComponentType extends Product {
   small?: boolean;
   blurDataUrl?: string;
+  priority?: boolean;
+  loading?: "eager" | "lazy";
   ratings: number;
   dateAdded: string;
   categoryName?: string;

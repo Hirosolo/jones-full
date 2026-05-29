@@ -49,6 +49,8 @@ urlpatterns = [
         product_listing.latest_products_view, name='latest_products_list_api'),
     path('weekly-bestsellers/',
         product_listing.weekly_bestsellers_view, name='weekly_bestsellers_list_api'),
+    path('products/',
+        product_listing.all_products_view, name='all_products_list_api'),
     path('product-slug-aliases/',
         product_slug_aliases.product_slug_aliases_view, name='product_slug_aliases_api'),
     path('cms/site-content/',

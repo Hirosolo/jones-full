@@ -8,6 +8,7 @@ import { IoIosArrowForward } from "react-icons/io";
 
 import Logo from "@Components/common/Logo";
 import { getPathString } from "src/utils";
+import { buildProductListingHref } from "src/utils";
 import { getCategories } from "@Lib/api/catalog";
 import type { BackendCategory } from "src/types/backend";
 import useBrandGroups from "@Hooks/useBrandGroups";
@@ -221,7 +222,7 @@ export default function HeaderSection() {
               })
               .map((category) => (
               <div key={category.slug} className="header__brands-group">
-                <Link href={"/category/" + (category.slug || getPathString(category.name))}>
+                <Link href={buildProductListingHref({ category: category.slug || getPathString(category.name) })}>
                   <a className="header__brands-group-btn header__brands-group-btn--link">
                     {category.name}
                   </a>
@@ -229,7 +230,7 @@ export default function HeaderSection() {
               </div>
             ))}
             <div className="header__brands-group">
-              <Link href="/category/all">
+              <Link href="/p">
                 <a className="header__brands-group-btn header__brands-group-btn--link">
                   VIEW ALL
                 </a>
@@ -266,7 +267,7 @@ export default function HeaderSection() {
                 ) : activeBrandsGroup && brandGroups[activeBrandsGroup]?.length ? (
                   brandGroups[activeBrandsGroup].map((brand) => (
                     <div key={brand.slug} className="header__brands-content-item">
-                      <Link href={brand.url || `/brand/${brand.slug || getPathString(brand.name)}`}>
+                      <Link href={buildProductListingHref({ brand: brand.slug || getPathString(brand.name) })}>
                         <a>{brand.name}</a>
                       </Link>
                     </div>

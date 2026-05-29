@@ -48,6 +48,75 @@
     transition: transform 0.3s, padding 0.3s;
   }
 
+  &__grouped-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  &__group {
+    border: 0.1rem solid rgba($c-control-gray, 0.7);
+    border-radius: 1rem;
+    overflow: hidden;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfbfb 100%);
+    box-shadow: 0 0.1rem 0.2rem rgba(0, 0, 0, 0.03);
+  }
+
+  &__group-title {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.1rem;
+    font-weight: 700;
+    font-size: $text-sm;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background-color: rgba($c-background-black, 0.03);
+    transition: background-color 0.2s ease, color 0.2s ease;
+
+    &:hover,
+    &:focus-visible,
+    &--active {
+      background-color: rgba($c-background-black, 0.08);
+      color: $c-text-red;
+    }
+  }
+
+  &__group-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.85rem 1.1rem 1rem;
+    background-color: #fff;
+  }
+
+  &__option--button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.8rem 0.9rem;
+    border-radius: 0.8rem;
+    text-align: left;
+    background-color: #fafafa;
+    border: 0.1rem solid transparent;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+
+    &:hover,
+    &:focus-visible {
+      background-color: #f3f3f3;
+      border-color: rgba($c-control-gray, 0.85);
+    }
+  }
+
+  &__option--checked.filter-param__option--button {
+    background-color: rgba($c-text-red, 0.08);
+    border-color: rgba($c-text-red, 0.2);
+    color: $c-text-red;
+  }
+
   &__link {
     & + & {
       margin-top: 1rem;

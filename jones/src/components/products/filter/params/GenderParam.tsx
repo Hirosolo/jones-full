@@ -3,6 +3,7 @@ import Link from "next/link";
 import FilterHeaderParam from "../FilterHeaderParam";
 
 import { useProductsState } from "@Contexts/ProductsContext";
+import { buildProductListingHref } from "src/utils";
 
 export default function GenderParam() {
   const { filterListings, filterState } = useProductsState();
@@ -19,7 +20,7 @@ export default function GenderParam() {
           }
           key={gender}
         >
-          <Link href={`/category/${gender}`}>
+          <Link href={buildProductListingHref({ gender: gender.toUpperCase() })}>
             <a
               onClick={(e) => {
                 e.preventDefault();

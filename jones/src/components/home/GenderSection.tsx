@@ -3,6 +3,7 @@ import Image, { type StaticImageData } from "next/image";
 import type { SimpleSectionContent } from "src/data/defaultContent";
 import type { BackendCategory } from "src/types/backend";
 import { getPathString } from "src/utils";
+import { buildProductListingHref } from "src/utils";
 
 import bannerImage from "@Images/pexels-theia-sight-4932179.jpg";
 import clothingImage from "@Images/clothing.jpg";
@@ -62,7 +63,7 @@ export default function GenderSection({ categories, content }: GenderSectionProp
 
     return {
       className: fallbackBlock.className,
-      href: category?.slug ? `/category/${category.slug}` : fallbackBlock.href,
+      href: category?.slug ? buildProductListingHref({ category: category.slug }) : fallbackBlock.href,
       imgSource: resolveCategoryImage(category, fallbackBlock.imgSource),
       title: category?.name || fallbackBlock.title,
     };
@@ -78,6 +79,8 @@ export default function GenderSection({ categories, content }: GenderSectionProp
             objectPosition="bottom"
             layout="fill"
             src={bannerImage}
+            priority
+            loading="eager"
           />
           <h3 className="gender__text-overlay">
             {content.title}
@@ -88,7 +91,7 @@ export default function GenderSection({ categories, content }: GenderSectionProp
             <div key={className} className={"gender__block " + className}>
               <Link href={href}>
                 <a className="gender__block-link">
-                  <Image alt="" layout="fill" src={imgSource} objectFit="cover" />
+                  <Image alt="" layout="fill" src={imgSource} objectFit="cover" priority loading="eager" />
                   <h3 className="gender__block-title">
                     <span>{title}</span>
                   </h3>
@@ -105,31 +108,31 @@ export default function GenderSection({ categories, content }: GenderSectionProp
 const categorySectionBlocks = [
   {
     className: "gender__block-men",
-    href: "/category/clothing",
+    href: buildProductListingHref({ category: "clothing" }),
     imgSource: clothingImage,
     title: "Clothing",
   },
   {
     className: "gender__block-women",
-    href: "/category/accessories",
+    href: buildProductListingHref({ category: "accessories" }),
     imgSource: accessoriesImage,
     title: "Accessories",
   },
   {
     className: "gender__block-kids",
-    href: "/category/footwear",
+    href: buildProductListingHref({ category: "footwear" }),
     imgSource: footwearImage,
     title: "Footwear",
   },
   {
     className: "gender__block-babies",
-    href: "/category/home-decor",
+    href: buildProductListingHref({ category: "home-decor" }),
     imgSource: homeDecorImage,
     title: "Home Decor",
   },
   {
     className: "gender__block-unisex",
-    href: "/category/sale",
+    href: buildProductListingHref({ category: "sale" }),
     imgSource: saleImage,
     title: "Sale",
   },

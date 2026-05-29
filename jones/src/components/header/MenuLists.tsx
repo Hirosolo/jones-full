@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getPathString } from "src/utils";
+import { buildProductListingHref } from "src/utils";
 
 const CategoriesData = require("@Data/CategoriesData.json");
 
@@ -20,7 +21,7 @@ export function buildCategoriesList(categoryItems: CategoryMenuItem[]) {
     .filter((category) => (category.slug || getPathString(category.name)) !== "all")
     .map((category) => (
       <li key={category.slug || category.name} className="sidebar__links-item sidebar__links-accordion">
-        <Link href={"/category/" + (category.slug || getPathString(category.name))}>
+        <Link href={buildProductListingHref({ category: category.slug || getPathString(category.name) })}>
           <a className="sidebar__anchor" style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
             {category.name}
           </a>
@@ -28,7 +29,7 @@ export function buildCategoriesList(categoryItems: CategoryMenuItem[]) {
       </li>
     )),
   <li key="view-all" className="sidebar__links-item sidebar__links-accordion">
-    <Link href="/category/all">
+    <Link href="/p">
       <a className="sidebar__anchor" style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
         VIEW ALL
       </a>

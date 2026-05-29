@@ -6,6 +6,7 @@ import { useRouter } from "next/router";
 
 import useBrandGroups from "@Hooks/useBrandGroups";
 import { getPathString } from "src/utils";
+import { buildProductListingHref } from "src/utils";
 
 interface CollectionSectionProps {
   content: SimpleSectionContent & { description: string };
@@ -86,6 +87,8 @@ export default function CollectionSection({ content }: CollectionSectionProps) {
                   layout="fill"
                   src={brandGalleryImages[group] || brandGalleryImages.Other}
                   objectFit="cover"
+                  priority
+                  loading="eager"
                 />
                 <div className="collections__block-content">
                   <h3 className="collections__block-title">{group}</h3>
@@ -112,4 +115,4 @@ const brandGalleryImages: Record<string, string> = {
   "Video Game": "/assets/images/videoGame-banner-vertical.png",
 };
 
-const brandPath = (group: string) => `/brand/${getPathString(group)}`;
+const brandPath = (group: string) => buildProductListingHref({ brand: getPathString(group) });

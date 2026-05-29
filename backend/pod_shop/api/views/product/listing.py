@@ -210,6 +210,37 @@ def weekly_bestsellers_view(request):
 
 @extend_schema(
     responses={200: ProductSerializer(many=True)},
+    summary="Danh sách tất cả sản phẩm",
+    description="Trả về toàn bộ sản phẩm active trong database."
+)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def all_products_view(request):
+    """Return all active products for the storefront listing page."""
+    from django.core.cache import cache
+
+    cache_key = 'all_products_api_v1'
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return Response(cached)
+
+    qs = (
+        Product.objects.filter(status='A')
+        .select_related('category', 'brand')
+        .prefetch_related('tags', 'images')
+        .order_by('-created_at')
+    )
+
+    data = ProductSerializer(qs, many=True, context={'user': request.user, 'request': request}).data
+
+    if data:
+                cache.set(cache_key, data, 60 * 10)
+
+    return Response(data)
+
+
+@extend_schema(
+    responses={200: ProductSerializer(many=True)},
     summary="Tìm kiếm sản phẩm",
     description="Trả về danh sách sản phẩm khớp với query q (theo name, slug, hoặc desc_short)."
 )

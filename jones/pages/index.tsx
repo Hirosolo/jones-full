@@ -9,6 +9,7 @@ import { getLatestProducts } from "@Lib/api/products";
 import { getCategories } from "@Lib/api/catalog";
 import { getArticles } from "@Lib/api/articles";
 import type { FeaturedArticleItem } from "@Components/home/FeaturedArticleSection";
+import { buildProductListingHref } from "src/utils";
 
 const CollectionSection = dynamic(
   () => import("@Components/home/CollectionSection")
@@ -45,7 +46,7 @@ const Home: NextPage<HomePropTypes> = ({
           products={newArrivals}
           title={homeSections.latestProducts.title}
           subtitle={homeSections.latestProducts.subtitle}
-          url="/category/new"
+          url={buildProductListingHref({})}
         />
       )}
       <GenderSection categories={categories} content={homeSections.categories} />
@@ -55,7 +56,7 @@ const Home: NextPage<HomePropTypes> = ({
           products={bestSellers}
           title={homeSections.bestsellers.title}
           subtitle={homeSections.bestsellers.subtitle}
-          url="/category/new?sort=best"
+          url={buildProductListingHref({ sort: "best" })}
         />
       )}
       {homeSections.featuredArticles.enabled && (
