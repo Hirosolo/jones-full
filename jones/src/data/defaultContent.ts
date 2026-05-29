@@ -142,9 +142,9 @@ export interface SiteContent {
 
 export const defaultContent: SiteContent = {
   seo: {
-    title: 'FulfillNext - Discover. Design. Define Your Style',
-    description: 'Discover premium Print On Demand (POD) fashion, custom t-shirts, personalized accessories, and trending lifestyle products at FulfillNext.',
-    keywords: 'FulfillNext, Print On Demand, POD, custom t-shirts, personalized products, fashion, trending, lifestyle',
+    title: 'Jones - Discover. Design. Define Your Style',
+    description: 'Discover premium Print On Demand (POD) fashion, custom t-shirts, personalized accessories, and trending lifestyle products at Jones.',
+    keywords: 'Jones, Print On Demand, POD, custom t-shirts, personalized products, fashion, trending, lifestyle',
     ogImage: '/images/FulfillNext-og.png',
   },
 
@@ -206,7 +206,7 @@ export const defaultContent: SiteContent = {
       enabled: true,
       order: 5,
       title: 'Watch Our Latest Video',
-      subtitle: 'Discover the latest trends and products from FulfillNext',
+      subtitle: 'Discover the latest trends and products from Jones',
       videoId: 'FNMBpEYPTn4',
     },
 

@@ -1,4 +1,4 @@
-# FulfillNext — Tài liệu deploy trên 1 server vật lý (FE + BE + DB cùng datacenter)
+# Jones — Tài liệu deploy trên 1 server vật lý (FE + BE + DB cùng datacenter)
 
 Tài liệu này mô tả kiến trúc và quy trình triển khai toàn bộ stack FulfillNext (Next.js frontend + Django backend + PostgreSQL + Redis + nginx) lên **một server Ubuntu duy nhất**. Toàn bộ service chạy qua Docker Compose, FE/BE/DB nằm trên cùng một mạng nội bộ Docker → BE ↔ DB latency dưới 1 ms, FE ↔ BE đi qua container network không qua public Internet.
 

@@ -4128,7 +4128,7 @@ export default function AdminPage() {
       {/* Sidebar */}
       <aside className='admin-sidebar'>
         <div className='admin-sidebar-header'>
-          <h2>🛠️ FulfillNext CMS</h2>
+          <h2>🛠️ Jones CMS</h2>
         </div>
         <nav className='admin-sidebar-nav'>
           {SECTIONS.map(sec => {
@@ -4652,7 +4652,7 @@ export default function AdminPage() {
         {/* Status Bar */}
         <div className='admin-statusbar'>
           <span>{hasChanges ? '● Unsaved changes' : '✓ All changes saved'}</span>
-          <span>FulfillNext Admin CMS v2.0 • Images stored as URLs</span>
+          <span>Jones Admin CMS v2.0 • Images stored as URLs</span>
         </div>
       </main>
 
