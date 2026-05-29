@@ -152,7 +152,9 @@ export const getStaticPaths: GetStaticPaths = async () => {
   const articles = await getArticles({ page_size: 500 }).catch(() => ({ articles: [] }));
 
   return {
-    paths: articles.articles.map((article) => ({ params: { slug: article.slug } })),
+    paths: articles.articles
+      .filter((article) => typeof article.slug === "string" && article.slug.trim().length > 0)
+      .map((article) => ({ params: { slug: article.slug } })),
     fallback: "blocking",
   };
 };
@@ -189,17 +191,20 @@ export const getStaticProps: GetStaticProps<ArticlePageProps> = async ({ params 
           publishedAt: article.publishedAt || null,
           content: article.content,
           openGraph: article.openGraph || null,
-          relatedArticles: article.relatedArticles.map((relatedArticle: {
-            title: string;
-            slug: string;
-            excerpt: string;
-            featuredImage: string;
-          }) => ({
-            title: relatedArticle.title,
-            slug: relatedArticle.slug,
-            excerpt: stripHtml(relatedArticle.excerpt),
-            featuredImage: relatedArticle.featuredImage,
-          })),
+          relatedArticles: article.relatedArticles
+            .map((relatedArticle: {
+              title: string;
+              slug?: string;
+              excerpt: string;
+              featuredImage: string;
+              url?: string;
+            }) => ({
+              title: relatedArticle.title,
+              slug: String(relatedArticle.slug || "").trim(),
+              excerpt: stripHtml(relatedArticle.excerpt),
+              featuredImage: relatedArticle.featuredImage,
+            }))
+            .filter((relatedArticle: { slug: string }) => relatedArticle.slug.length > 0),
         },
       },
       revalidate: 300,

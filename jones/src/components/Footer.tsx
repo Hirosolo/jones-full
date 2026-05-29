@@ -65,7 +65,13 @@ export default function Footer() {
 
     async function loadFooter() {
       try {
-        const response = await fetch("/api/shop/cms/site-content/", { cache: "no-store" });
+        const response = await fetch(`/api/shop/cms/site-content/?_=${Date.now()}`, {
+          cache: "no-store",
+          headers: {
+            "Cache-Control": "no-cache",
+            Pragma: "no-cache",
+          },
+        });
         const data = await response.json().catch(() => ({}));
         if (!cancelled) {
           setFooterContent(normalizeFooter(data?.footer));

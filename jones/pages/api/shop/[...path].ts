@@ -28,11 +28,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const pathSegments = Array.isArray(req.query.path) ? req.query.path : [];
+  const joinedPath = pathSegments.join("/").toLowerCase();
+  const isCmsEndpoint = joinedPath.startsWith("cms/");
   const backendUrl = buildBackendUrl(pathSegments, req.query);
 
   try {
     const backendResponse = await fetch(backendUrl, {
       method: req.method,
+      cache: isCmsEndpoint ? "no-store" : undefined,
       headers: {
         Accept: req.headers.accept || "application/json",
       },
@@ -46,6 +49,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.status(backendResponse.status);
     if (contentType) {
       res.setHeader("Content-Type", contentType);
+    }
+    if (isCmsEndpoint) {
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
     }
 
     return typeof body === "string" ? res.send(body) : res.json(body);

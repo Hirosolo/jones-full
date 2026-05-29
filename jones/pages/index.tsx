@@ -1,11 +1,11 @@
-import type { NextPage, GetStaticProps } from "next";
+import type { NextPage, GetServerSideProps } from "next";
 import dynamic from "next/dynamic";
 import SEO from "@Components/common/SEO";
 import type { ProductComponentType } from "src/types/shared";
 import type { BackendCategory } from "src/types/backend";
 import { defaultContent, type HomeContent, type SiteContent } from "src/data/defaultContent";
 
-import { getLatestProducts } from "@Lib/api/products";
+import { getBestSellers, getLatestProducts } from "@Lib/api/products";
 import { getCategories } from "@Lib/api/catalog";
 import { getArticles } from "@Lib/api/articles";
 import type { FeaturedArticleItem } from "@Components/home/FeaturedArticleSection";
@@ -70,16 +70,25 @@ const Home: NextPage<HomePropTypes> = ({
   );
 };
 
-export const getStaticProps: GetStaticProps = async () => {
-  let products: ProductComponentType[] = [];
+export const getServerSideProps: GetServerSideProps = async ({ res }) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
+
+  let latestProducts: ProductComponentType[] = [];
+  let bestSellerProducts: ProductComponentType[] = [];
   let categories: BackendCategory[] = [];
   let featuredArticles: FeaturedArticleItem[] = [];
   let homeSections: HomeContent = defaultContent.home;
 
   try {
-    products = await getLatestProducts();
+    latestProducts = await getLatestProducts();
   } catch (err) {
     console.error("[Home] Failed to fetch latest products:", err);
+  }
+
+  try {
+    bestSellerProducts = await getBestSellers();
+  } catch (err) {
+    console.error("[Home] Failed to fetch best seller products:", err);
   }
 
   try {
@@ -111,16 +120,8 @@ export const getStaticProps: GetStaticProps = async () => {
     console.error("[Home] Failed to fetch CMS content:", err);
   }
 
-  const shuffled = [...products];
-  for (let index = shuffled.length - 1; index > 0; index -= 1) {
-    const swapIndex = Math.floor(Math.random() * (index + 1));
-    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
-  }
-
-  const selected = shuffled.slice(0, 16);
-  const splitIndex = Math.ceil(selected.length / 2);
-  const newArrivals = selected.slice(0, splitIndex);
-  const bestSellers = selected.slice(splitIndex);
+  const newArrivals = latestProducts.slice(0, 8);
+  const bestSellers = bestSellerProducts.slice(0, 8);
 
   const newArrivalsImgDataUrls: Record<string, string> = {};
   const bestSellersImgDataUrls: Record<string, string> = {};
@@ -136,7 +137,6 @@ export const getStaticProps: GetStaticProps = async () => {
       featuredArticles,
       homeSections,
     },
-    revalidate: 300,
   };
 };
 
