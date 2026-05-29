@@ -264,6 +264,8 @@ type AdminBrand = {
 type BrandGroupDraft = {
   name: string
   order?: number
+  image?: string
+  image_url?: string
 }
 
 function getDraftBrandGroups(content: SiteContent): BrandGroupDraft[] {
@@ -273,6 +275,7 @@ function getDraftBrandGroups(content: SiteContent): BrandGroupDraft[] {
         .map((draft: any, index: number) => ({
           name: String(draft?.name || '').trim(),
           order: Number.isFinite(Number(draft?.order)) ? Number(draft.order) : index + 1,
+          image: String(draft?.image || draft?.image_url || '').trim(),
         }))
         .filter(draft => draft.name)
     : []
@@ -328,14 +331,19 @@ function buildBrandGroups(brands: AdminBrand[], drafts: BrandGroupDraft[] = []) 
     .map((draft, index) => ({
       name: draft.name,
       order: Number.isFinite(Number(draft.order)) ? Number(draft.order) : result.length + index + 1,
+      image: draft.image || draft.image_url || '',
       items: [] as Array<{ id: number | string; name: string; slug: string; url: string; order: number }>,
     }))
 
-  return {
-    groups: [...result, ...draftGroups].map((group, index) => ({
-      ...group,
-      order: index + 1,
-    })),
+    return {
+    groups: [...result, ...draftGroups].map((group, index) => {
+      const draft = drafts.find(d => d.name === group.name) || null
+      return {
+        ...group,
+        order: index + 1,
+        image: draft ? (draft.image || draft.image_url || '') : (group as any).image || undefined,
+      }
+    }),
   }
 }
 
@@ -393,6 +401,7 @@ async function handleBrandGroupMutation(
   const content = await getBackendContent()
   const draftGroups = getDraftBrandGroups(content)
   const draftIndex = draftGroups.findIndex(group => group.name === currentGroup)
+  const body = await parseRequestBody(req)
 
   if (groupBrands.length === 0 && draftIndex === -1) {
     return res.status(404).json({ error: 'Brand group not found' })
@@ -435,9 +444,14 @@ async function handleBrandGroupMutation(
   }
 
   if (groupBrands.length === 0) {
+    const existingDraft = draftGroups.find(g => g.name === currentGroup) || null
     const nextDrafts = draftGroups
       .filter(group => group.name !== currentGroup)
-      .concat([{ name: targetGroup, order: draftIndex === -1 ? draftGroups.length + 1 : draftGroups[draftIndex].order }])
+      .concat([{
+        name: targetGroup,
+        order: draftIndex === -1 ? draftGroups.length + 1 : draftGroups[draftIndex].order,
+        image: String(body?.image || existingDraft?.image || existingDraft?.image_url || '').trim(),
+      }])
 
     await setDraftBrandGroups(nextDrafts)
     return res.status(200).json({
@@ -449,9 +463,14 @@ async function handleBrandGroupMutation(
 
   await Promise.all(groupBrands.map(brand => updateBrandLeague(brand.id, targetGroup)))
   if (draftIndex !== -1) {
+    const existingDraft = draftGroups[draftIndex]
     const nextDrafts = draftGroups
       .filter(group => group.name !== currentGroup)
-      .concat([{ name: targetGroup, order: draftIndex === -1 ? draftGroups.length + 1 : draftGroups[draftIndex].order }])
+      .concat([{
+        name: targetGroup,
+        order: draftIndex === -1 ? draftGroups.length + 1 : draftGroups[draftIndex].order,
+        image: String(body?.image || existingDraft?.image || existingDraft?.image_url || '').trim(),
+      }])
     await setDraftBrandGroups(nextDrafts)
   }
   return res.status(200).json({
@@ -775,6 +794,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         try {
           const body = await parseRequestBody(req)
           const nextGroup = String(body?.name || body?.newName || body?.group || '').trim()
+          const image = String(body?.image || body?.image_url || '').trim()
           if (!nextGroup) {
             return res.status(400).json({ error: 'Brand group name is required' })
           }
@@ -785,7 +805,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             return res.status(409).json({ error: 'Brand group already exists' })
           }
 
-          await setDraftBrandGroups([...drafts, { name: nextGroup, order: drafts.length + 1 }])
+          await setDraftBrandGroups([...drafts, { name: nextGroup, order: drafts.length + 1, image }])
           return res.status(200).json({ success: true, message: `Brand group "${nextGroup}" created successfully`, count: 0 })
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Failed to create brand group'

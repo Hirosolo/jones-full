@@ -69,33 +69,39 @@ export default function CollectionSection({ content }: CollectionSectionProps) {
           ref={galleryRef}
           className="collections__grid collections__grid--gallery"
         >
-          {Object.entries(brandGroups).map(([group], index) => (
-            <div
-              key={group}
-              className="collections__block collections__block--gallery"
-              role="button"
-              tabIndex={0}
-              onClick={() => router.push(brandPath(group))}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") router.push(brandPath(group));
-              }}
-            >
-              <div className="collections__block-link">
-                <Image
-                  className="collections__block-image"
-                  alt=""
-                  layout="fill"
-                  src={brandGalleryImages[group] || brandGalleryImages.Other}
-                  objectFit="cover"
-                  priority
-                  loading="eager"
-                />
-                <div className="collections__block-content">
-                  <h3 className="collections__block-title">{group}</h3>
+          {Object.entries(brandGroups).map(([group, items]) => {
+            const firstBrand = items[0];
+            const href = buildProductListingHref({ brand: firstBrand?.slug || getPathString(group) });
+
+            return (
+              <div
+                key={group}
+                className="collections__block collections__block--gallery"
+                role="button"
+                tabIndex={0}
+                onClick={() => router.push(href)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") router.push(href);
+                }}
+                style={{ minHeight: "clamp(340px, 42vw, 520px)" }}
+              >
+                <div className="collections__block-link">
+                  <Image
+                    className="collections__block-image"
+                    alt=""
+                    layout="fill"
+                    src={brandGalleryImages[group] || brandGalleryImages.Other}
+                    objectFit="cover"
+                    priority
+                    loading="eager"
+                  />
+                  <div className="collections__block-content">
+                    <h3 className="collections__block-title">{group}</h3>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
@@ -106,7 +112,7 @@ const brandGalleryImages: Record<string, string> = {
   Business: "/assets/images/bussiness-banner-vertical.png",
   Culture: "/assets/images/culture-banner-vertical.png",
   "K-Pop": "/assets/images/kPOP-banner-vertical.png",
-  Movie: "/assets/images/moive-banner-vertical.png",
+  Movie: "/assets/images/moive-banner-vertical.jpg",
   Music: "/assets/images/music-banner-vertical.png",
   Other: "/assets/images/other-banner-vertical.png",
   "Rock Band": "/assets/images/rockBand-banner-vertical.png",
@@ -114,5 +120,3 @@ const brandGalleryImages: Record<string, string> = {
   Tabletop: "/assets/images/tabletop-banner-vertical.png",
   "Video Game": "/assets/images/videoGame-banner-vertical.png",
 };
-
-const brandPath = (group: string) => buildProductListingHref({ brand: getPathString(group) });

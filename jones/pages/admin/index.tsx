@@ -1960,6 +1960,7 @@ interface BrandGroupItem {
     url: string
     order: number
   }>
+  image?: string
 }
 
 interface BrandGroupResponse {
@@ -1997,6 +1998,7 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
   const [showGroupForm, setShowGroupForm] = useState(false)
   const [editingGroup, setEditingGroup] = useState<string | null>(null)
   const [groupName, setGroupName] = useState('')
+  const [groupImage, setGroupImage] = useState('')
   const [groupSubmitting, setGroupSubmitting] = useState(false)
   const [confirmingGroupDelete, setConfirmingGroupDelete] = useState<string | null>(null)
 
@@ -2066,6 +2068,7 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
   const resetGroupForm = () => {
     setEditingGroup(null)
     setGroupName('')
+    setGroupImage('')
     setShowGroupForm(false)
   }
 
@@ -2106,6 +2109,8 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
   const openGroupEdit = (name: string) => {
     setEditingGroup(name)
     setGroupName(name)
+    const g = brandGroups.find(bg => bg.name === name)
+    setGroupImage((g as any)?.image || '')
     setExpandedGroup(name)
     setShowGroupForm(true)
   }
@@ -2186,7 +2191,7 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
         const res = await fetch('/api/admin/brand-groups', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: nextGroup }),
+          body: JSON.stringify({ name: nextGroup, image: groupImage.trim() }),
         })
         const data = await res.json().catch(() => ({}))
         if (!res.ok) throw new Error(data.error || data.detail || 'Failed')
@@ -2196,7 +2201,7 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
         const res = await fetch('/api/admin/brand-groups', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ currentGroup, name: nextGroup }),
+          body: JSON.stringify({ currentGroup, name: nextGroup, image: groupImage.trim() }),
         })
         const data = await res.json().catch(() => ({}))
         if (!res.ok) throw new Error(data.error || data.detail || 'Failed')
@@ -2578,6 +2583,9 @@ function BrandManagement({ showToast }: { showToast: (msg: string, type: 'succes
                     required
                     autoFocus
                   />
+                </div>
+                <div style={{ margin: 0 }}>
+                  <ImageUploader currentUrl={groupImage} onUpload={url => setGroupImage(url)} label='Image URL' />
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
